@@ -1,4 +1,6 @@
 #include "filr.h"
+#include <string.h>
+#include "windows.h"
 
 void filr_file_array_append(filr_file_array* array, filr_file* new_elem) {
     array->size++;
@@ -9,10 +11,9 @@ void filr_file_array_append(filr_file_array* array, filr_file* new_elem) {
 
     if (array->size > array->capacity) {
         array->capacity *= 2;
-        realloc(array->items, array->capacity * sizeof(filr_file));
+        void *_ = realloc(array->items, array->capacity * sizeof(filr_file));
     }
 
-    printf("%d ", array->size);
     memcpy(array->items + (array->size - 1), new_elem, sizeof(filr_file));
 }
 
@@ -56,10 +57,25 @@ bool parse_directory_contents(const char *dir, filr_file_array* array) {
         filr_file_array_append(array, &next_file);
     } while (FindNextFile(hFind, &file));
 
+    FindClose(hFind);
+
     return true;
 }
 
-int main(void) {
+filr_file_array filr_init_array() {
+    filr_file_array array = {0};
+
+    array.capacity = INIT_ARRAY_CAPACITY;
+
+    return array;
+}
+
+
+filr_free_array(filr_file_array *array) {
+    free(array->items);
+}
+
+/*int main(void) {
 
     const char *HOME = getenv("HOMEPATH");
     filr_file_array array = {0};
@@ -76,4 +92,4 @@ int main(void) {
     }
 
     return 0;
-}
+}*/

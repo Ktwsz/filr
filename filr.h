@@ -5,10 +5,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include <windows.h>
 
 #define INIT_ARRAY_CAPACITY 128
-
 
 typedef struct {
     unsigned short year, month, day, hour, minute;
@@ -30,12 +28,10 @@ typedef struct {
 
 void filr_file_array_append(filr_file_array* array, filr_file* new_elem);
 
-void filr_parse_date(filr_date *dst, const FILETIME src);
-
-void filr_parse_file(filr_file *dst, const WIN32_FIND_DATA src);
-
-
 bool parse_directory_contents(const char *dir, filr_file_array* array);
 
+filr_file_array filr_init_array();
+
+filr_free_array(filr_file_array *array);
 
 #endif
