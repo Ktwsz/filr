@@ -20,18 +20,27 @@ typedef struct {
 } filr_file;
 
 typedef struct {
-    filr_file *items;
+    filr_file *files;
     size_t size;
     size_t capacity;
-} filr_file_array;
+    bool hide_dotfiles;
+    char *directory;
+    size_t file_index;
+} filr_context;
 
 
-void filr_file_array_append(filr_file_array* array, filr_file* new_elem);
+void filr_file_array_append(filr_context* context, filr_file* new_elem);
 
-bool parse_directory_contents(const char *dir, filr_file_array* array);
+bool load_directory(filr_context *context);
 
-filr_file_array filr_init_array();
+filr_context filr_init_context();
 
-filr_free_array(filr_file_array *array);
+void filr_free_context(filr_context *context);
+
+void filr_move_index(filr_context *context, size_t ix);
+
+void filr_reset_index(filr_context *context);
+
+void filr_goto_directory(filr_context* context);
 
 #endif

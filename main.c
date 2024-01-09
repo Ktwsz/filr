@@ -1,32 +1,49 @@
 #include "lib/raylib.h"
 #include "filr.h"
 
-void draw_directory_contents(const filr_file_array* array, int WINDOW_WIDTH, int WINDOW_HEIGHT) {
-    for (size_t i = 0; i < array->size; ++i) {
+void draw_directory_contents(const filr_context context, int WINDOW_WIDTH, int WINDOW_HEIGHT) {
+    for (size_t i = 0; i < context.size; ++i) {
         if (30 * (i + 1) + 10 > WINDOW_HEIGHT) return;
-        DrawText(array->items[i].name, 20, 30 * i + 10, 20, RAYWHITE);
+        Color highlight_color = RAYWHITE;
+        if (context.file_index == i) highlight_color = GREEN;
+        DrawText(context.files[i].name, 20, 30 * i + 10, 20, highlight_color);
+    }
+}
+
+
+void handle_key_presses(filr_context *context) {
+    if (IsKeyReleased(KEY_DOWN)) {
+        size_t ix = context->file_index;
+        if (ix < context->size) ix++;
+        filr_move_index(context, ix);
+    }
+    if (IsKeyReleased(KEY_UP)) {
+        size_t ix = context->file_index;
+        if (ix > 0) ix--;
+        filr_move_index(context, ix);
+    }
+    if (IsKeyReleased(KEY_ENTER)) {
+        filr_goto_directory(context);
+        filr_reset_index(context);
     }
 }
 
 
 int main(void) {
-    char *HOME = getenv("HOMEPATH");
 
-    filr_file_array array = filr_init_array();
-
-    parse_directory_contents(HOME, &array);
+    filr_context context = filr_init_context();
 
     InitWindow(800, 1000, "chuj");
 
     while (!WindowShouldClose()) {
+        handle_key_presses(&context);
         BeginDrawing();
         ClearBackground(BLACK);
-        //DrawText(array.items[array.size - 1].name, 400, 200, 20, RAYWHITE);
-        draw_directory_contents(&array, 800, 1000);
+        draw_directory_contents(context, 800, 1000);
         EndDrawing();
     }
 
-    filr_free_array(&array);
+    filr_free_context(&context);
 
     CloseWindow();
     return 0;
