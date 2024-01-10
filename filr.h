@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include "cstr.h"
 
 #define INIT_ARRAY_CAPACITY 128
 
@@ -13,7 +14,7 @@ typedef struct {
 } filr_date;
 
 typedef struct {
-    const char* name;
+    cstr name;
     bool is_directory;
     size_t size;
     filr_date last_edit_date;
@@ -24,7 +25,7 @@ typedef struct {
     size_t size;
     size_t capacity;
     bool hide_dotfiles;
-    char *directory;
+    cstr directory;
     size_t file_index;
 } filr_context;
 
@@ -41,6 +42,8 @@ void filr_move_index(filr_context *context, size_t ix);
 
 void filr_reset_index(filr_context *context);
 
-void filr_goto_directory(filr_context* context);
+void filr_goto_directory(filr_context *context);
+
+char *filr_get_file_name(filr_context *context, size_t ix);
 
 #endif

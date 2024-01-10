@@ -6,7 +6,7 @@ void draw_directory_contents(const filr_context context, int WINDOW_WIDTH, int W
         if (30 * (i + 1) + 10 > WINDOW_HEIGHT) return;
         Color highlight_color = RAYWHITE;
         if (context.file_index == i) highlight_color = GREEN;
-        DrawText(context.files[i].name, 20, 30 * i + 10, 20, highlight_color);
+        DrawText(filr_get_file_name(&context, i), 20, 30 * i + 10, 20, highlight_color);
     }
 }
 

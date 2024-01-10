@@ -1,7 +1,8 @@
 #include "filr.h"
 #include <string.h>
-#include <stdarg.h>
 #include "windows.h"
+
+cstr CSTR_DASH = { .str = "/", .size = 1 };
 
 void filr_file_array_append(filr_context* context, filr_file* new_elem) {
     context->size++;
@@ -31,7 +32,9 @@ void filr_parse_date(filr_date *dst, const FILETIME src) {
 }
 
 void filr_parse_file(filr_file *dst, const WIN32_FIND_DATA src) { 
-    dst->name = strdup(src.cFileName);
+    char *tmp_str = strdup(src.cFileName);
+    dst->name = cstr_init(strlen(tmp_str));
+    dst->name.str = tmp_str;
 
     dst->is_directory = src.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
 
@@ -39,38 +42,11 @@ void filr_parse_file(filr_file *dst, const WIN32_FIND_DATA src) {
     filr_parse_date(&(dst->last_edit_date), src.ftLastWriteTime);
 }
 
-char* concat(int count, ...) {
-    va_list ap;
-    int i;
-
-    // Find required length to store merged string
-    int len = 1; // room for NULL
-    va_start(ap, count);
-    for(i=0 ; i<count ; i++)
-        len += strlen(va_arg(ap, char*));
-    va_end(ap);
-
-    // Allocate memory to concat strings
-    char *merged = calloc(sizeof(char),len);
-    int null_pos = 0;
-
-    // Actually concatenate strings
-    va_start(ap, count);
-    for(i=0 ; i<count ; i++)
-    {
-        char *s = va_arg(ap, char*);
-        strcpy(merged+null_pos, s);
-        null_pos += strlen(s);
-    }
-    va_end(ap);
-
-    return merged;
-}
 
 bool load_directory(filr_context *context) {
     WIN32_FIND_DATA file;
     HANDLE hFind = NULL;
-    char *dir = context->directory;
+    char *dir = context->directory.str;
     context->size = 0;
 
     char str_path[2048];
@@ -98,7 +74,7 @@ filr_context filr_init_context() {
 
     context.capacity = INIT_ARRAY_CAPACITY;
     char *HOME = getenv("HOMEPATH");
-    context.directory = HOME;
+    context.directory = cstr_init_name(HOME);
     
     load_directory(&context);
 
@@ -107,8 +83,9 @@ filr_context filr_init_context() {
 
 
 void filr_free_context(filr_context *context) {
+    for (size_t i = 0; i < context->size; ++i) cstr_free(&context->files[i].name);
     free(context->files);
-    free(context->directory);
+    cstr_free(&context->directory);
 }
 
 
@@ -123,29 +100,23 @@ void filr_reset_index(filr_context *context) {
 
 void filr_goto_directory(filr_context* context) {
     size_t ix = context->file_index;
-    char *goto_directory = context->files[ix].name;
+    cstr goto_directory = context->files[ix].name;
 
-    context->directory = concat(3, context->directory, "/", goto_directory);
-    printf("%s\n", context->directory);
+    if (strcmp(goto_directory.str, "..") == 0) {
+        cstr tmp = cstr_strip_directory(context->directory);
+        //cstr_free(&context->directory);
+        context->directory = tmp;
+    } else if (strcmp(goto_directory.str, ".") != 0) {
+        cstr tmp = cstr_concat(3, context->directory, CSTR_DASH, goto_directory);
+        //cstr_free(&context->directory);
+        context->directory = tmp;
+    }
 
+    printf("%s %d\n", context->directory.str, context->directory.size);
     load_directory(context);
 }
 
-/*int main(void) {
 
-    const char *HOME = getenv("HOMEPATH");
-    filr_file_array array = {0};
-    array.capacity = INIT_ARRAY_CAPACITY;
-
-    printf("%s\n", HOME);
-    parse_directory_contents(HOME, &array);
-
-
-    printf("------\n");
-
-    for (size_t i = 0; i < array.size; ++i) {
-        printf("%s %d %d\n", array.items[i].name, array.items[i].is_directory, array.items[i].size);
-    }
-
-    return 0;
-}*/
+char *filr_get_file_name(filr_context *context, size_t ix) {
+    return context->files[ix].name.str;
+}
