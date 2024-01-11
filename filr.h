@@ -46,4 +46,6 @@ void filr_goto_directory(filr_context *context);
 
 char *filr_get_file_name(filr_context *context, size_t ix);
 
+void filr_print_array(filr_context *context);
+
 #endif

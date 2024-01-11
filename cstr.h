@@ -2,14 +2,15 @@
 #define CSTR_H
 
 #include <stddef.h>
+#define MAX_STR_LEN 256
 
 typedef struct {
-    char * str;
+    char str[MAX_STR_LEN];
     size_t size;
 } cstr;
 
 cstr cstr_init(size_t size);
-cstr cstr_init_name(char *s);
+cstr cstr_init_name(const char *s);
 
 void cstr_free(cstr *str);
 

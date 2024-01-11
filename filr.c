@@ -8,7 +8,7 @@ void filr_file_array_append(filr_context* context, filr_file* new_elem) {
     context->size++;
 
     if (context->files == NULL) {
-        context->files= malloc(context->capacity * sizeof(filr_file));
+        context->files = malloc(context->capacity * sizeof(filr_file));
     }
 
     if (context->size > context->capacity) {
@@ -16,7 +16,7 @@ void filr_file_array_append(filr_context* context, filr_file* new_elem) {
         void *_ = realloc(context->files, context->capacity * sizeof(filr_file));
     }
 
-    memcpy(context->files+ (context->size - 1), new_elem, sizeof(filr_file));
+    memcpy(context->files + (context->size - 1), new_elem, sizeof(filr_file));
 }
 
 void filr_parse_date(filr_date *dst, const FILETIME src) {
@@ -31,10 +31,8 @@ void filr_parse_date(filr_date *dst, const FILETIME src) {
     dst->minute = sys_time.wMinute;
 }
 
-void filr_parse_file(filr_file *dst, const WIN32_FIND_DATA src) { 
-    char *tmp_str = strdup(src.cFileName);
-    dst->name = cstr_init(strlen(tmp_str));
-    dst->name.str = tmp_str;
+void filr_parse_file(filr_file *dst, WIN32_FIND_DATA src) { 
+    dst->name = cstr_init_name(src.cFileName);
 
     dst->is_directory = src.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
 
@@ -47,7 +45,6 @@ bool load_directory(filr_context *context) {
     WIN32_FIND_DATA file;
     HANDLE hFind = NULL;
     char *dir = context->directory.str;
-    context->size = 0;
 
     char str_path[2048];
     sprintf(str_path, "%s\\*.*", dir);
@@ -81,11 +78,8 @@ filr_context filr_init_context() {
     return context;
 }
 
-
 void filr_free_context(filr_context *context) {
-    for (size_t i = 0; i < context->size; ++i) cstr_free(&context->files[i].name);
     free(context->files);
-    cstr_free(&context->directory);
 }
 
 
@@ -104,19 +98,26 @@ void filr_goto_directory(filr_context* context) {
 
     if (strcmp(goto_directory.str, "..") == 0) {
         cstr tmp = cstr_strip_directory(context->directory);
-        //cstr_free(&context->directory);
         context->directory = tmp;
     } else if (strcmp(goto_directory.str, ".") != 0) {
         cstr tmp = cstr_concat(3, context->directory, CSTR_DASH, goto_directory);
-        //cstr_free(&context->directory);
         context->directory = tmp;
     }
 
-    printf("%s %d\n", context->directory.str, context->directory.size);
+    context->size = 0;
     load_directory(context);
 }
 
 
 char *filr_get_file_name(filr_context *context, size_t ix) {
     return context->files[ix].name.str;
+}
+
+void filr_print_array(filr_context *context) {
+    printf("size: %d\n", context->size);
+    for (size_t i = 0; i < context->size; ++i) {
+        printf("i: %d str size: %d ", i, context->files[i].name.size);
+        printf("%s\n", filr_get_file_name(context, i));
+    }
+
 }

@@ -1,12 +1,14 @@
 #include "lib/raylib.h"
 #include "filr.h"
 
-void draw_directory_contents(const filr_context context, int WINDOW_WIDTH, int WINDOW_HEIGHT) {
+#define FONT_DIR "resources/firacode.ttf"
+
+void draw_directory_contents(const filr_context context, int WINDOW_WIDTH, int WINDOW_HEIGHT, Font *font) {
     for (size_t i = 0; i < context.size; ++i) {
         if (30 * (i + 1) + 10 > WINDOW_HEIGHT) return;
         Color highlight_color = RAYWHITE;
         if (context.file_index == i) highlight_color = GREEN;
-        DrawText(filr_get_file_name(&context, i), 20, 30 * i + 10, 20, highlight_color);
+        DrawTextEx(*font, filr_get_file_name(&context, i), (Vector2){20.0f, (float) (30 * i + 10)}, (float)font->baseSize, 2, highlight_color);
     }
 }
 
@@ -33,13 +35,17 @@ int main(void) {
 
     filr_context context = filr_init_context();
 
+    SetConfigFlags(FLAG_VSYNC_HINT);
+
     InitWindow(800, 1000, "chuj");
+
+    Font font = LoadFontEx(FONT_DIR, 32, 0, 250);
 
     while (!WindowShouldClose()) {
         handle_key_presses(&context);
         BeginDrawing();
         ClearBackground(BLACK);
-        draw_directory_contents(context, 800, 1000);
+        draw_directory_contents(context, 800, 1000, &font);
         EndDrawing();
     }
 

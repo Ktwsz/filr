@@ -2,25 +2,24 @@
 #include <stdarg.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 cstr cstr_init(size_t size) {
     cstr str = {0};
     str.size = size;
-    str.str = calloc(sizeof(char), size + 1);
 
     return str;
 }
 
 
-cstr cstr_init_name(char *s) {
-    cstr str = { .str = s, .size = strlen(s)};
+cstr cstr_init_name(const char *s) {
+    cstr str = {0};
+    snprintf(str.str, MAX_STR_LEN, "%s", s);
+    str.size = strlen(s);
+    
     return str;
 }
 
-
-void cstr_free(cstr *str) {
-    free(str->str);
-}
 
 cstr cstr_concat(int count, ...) {
     va_list ap;
