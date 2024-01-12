@@ -71,6 +71,7 @@ filr_context filr_init_context() {
 
     context.capacity = INIT_ARRAY_CAPACITY;
     char *HOME = getenv("HOMEPATH");
+    printf("%s\n", HOME);
     context.directory = cstr_init_name(HOME);
     
     load_directory(&context);
