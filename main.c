@@ -3,7 +3,7 @@
 #include "filr.h"
 #include "view.h"
 
-#define FONT_DIR "resources/firacode.ttf"
+#define FONT_DIR "resources/font/firacode.ttf"
 
 #define INIT_WINDOW_HEIGHT 800
 #define INIT_WINDOW_WIDTH 800

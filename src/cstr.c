@@ -1,4 +1,4 @@
-#include "cstr.h"
+#include "../cstr.h"
 #include <stdarg.h>
 #include <string.h>
 #include <stdlib.h>

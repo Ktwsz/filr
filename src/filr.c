@@ -1,4 +1,4 @@
-#include "filr.h"
+#include "../filr.h"
 #include <string.h>
 #include "windows.h"
 
@@ -13,7 +13,7 @@ void filr_file_array_append(filr_context* context, filr_file* new_elem) {
 
     if (context->size > context->capacity) {
         context->capacity *= 2;
-        void *_ = realloc(context->files, context->capacity * sizeof(filr_file));
+        realloc(context->files, context->capacity * sizeof(filr_file));
     }
 
     memcpy(context->files + (context->size - 1), new_elem, sizeof(filr_file));
