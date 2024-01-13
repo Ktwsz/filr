@@ -4,7 +4,7 @@
 #include "lib/raylib.h"
 #include "filr.h"
 
-void view_directory_contents(filr_context *context, Rectangle view_camera, Vector2 text_rect, Vector2 offset, Font *font);
+int view_directory_contents(filr_context *context, Rectangle view_camera, Vector2 text_rect, Vector2 offset, Font *font);
 
 void view_center_camera(filr_context *context, Rectangle *view_camera, Vector2 text_rect, Vector2 offset);
 

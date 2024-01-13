@@ -9,8 +9,10 @@ Vector2 get_position(int ix, Vector2 text_rect, Vector2 offset) {
 }
 
 
-void view_directory_contents(filr_context *context, Rectangle view_camera, Vector2 text_rect, Vector2 offset, Font *font) {
+int view_directory_contents(filr_context *context, Rectangle view_camera, Vector2 text_rect, Vector2 offset, Font *font) {
     size_t ix = (view_camera.y - offset.y) / text_rect.y;
+    int mouse_ix = -1;
+    Vector2 mouse_position = GetMousePosition();
 
     for (; ix < context->size; ++ix) {
         Vector2 position = get_position(ix, text_rect, offset);
@@ -19,12 +21,17 @@ void view_directory_contents(filr_context *context, Rectangle view_camera, Vecto
         Color highlight_color = RAYWHITE;
         if (context->file_index == ix) highlight_color = GREEN;
 
+        Vector2 draw_rect = {position.x - view_camera.x, position.y - view_camera.y};
+
         DrawTextEx(*font,
                    filr_get_file_name(context, ix),
-                   (Vector2) {position.x - view_camera.x, position.y - view_camera.y},
+                   draw_rect,
                    (float)font->baseSize,
                    2,
                    highlight_color);
+
+        if (CheckCollisionPointRec(mouse_position, (Rectangle) {draw_rect.x, draw_rect.y, draw_rect.x + text_rect.x, draw_rect.y + text_rect.y}))
+            mouse_ix = ix;
     }
 
     view_scroll_bar(context, ix, view_camera);
@@ -37,6 +44,8 @@ void view_directory_contents(filr_context *context, Rectangle view_camera, Vecto
                    2,
                    RAYWHITE);
     }
+
+    return mouse_ix;
 }
 
 void view_center_camera(filr_context *context, Rectangle *view_camera, Vector2 text_rect, Vector2 offset) {

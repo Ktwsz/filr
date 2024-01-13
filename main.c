@@ -9,7 +9,10 @@
 #define INIT_WINDOW_WIDTH 800
 
 
-void handle_key_presses(filr_context *context, Rectangle *view_camera, Vector2 text_rect, Vector2 offset) {
+void handle_key_presses(filr_context *context, Rectangle *view_camera, Vector2 text_rect, Vector2 offset, int mouse_ix) {
+
+    float mouse_wheel_move = 0;
+
     if (IsKeyDown(KEY_LEFT_CONTROL)) {
         if (IsKeyPressed(KEY_Y)) {
             view_center_camera(context, view_camera, text_rect, offset);
@@ -31,6 +34,16 @@ void handle_key_presses(filr_context *context, Rectangle *view_camera, Vector2 t
             filr_goto_directory(context);
             filr_reset_index(context);
             view_move_camera(context, view_camera, text_rect, offset);
+        }
+        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+            if (context->file_index == mouse_ix) {
+                filr_goto_directory(context);
+                filr_reset_index(context);
+                view_move_camera(context, view_camera, text_rect, offset);
+            } else if (mouse_ix != -1) context->file_index = mouse_ix;
+        }
+        if ((mouse_wheel_move = GetMouseWheelMove())) {
+            printf("%f\n", mouse_wheel_move);
         }
     }
 }
@@ -64,13 +77,13 @@ int main(void) {
             previous_height = window_height;
         }
 
-        handle_key_presses(&context, &view_camera, text_rect, offset);
-
         BeginDrawing();
             ClearBackground(BLACK);
 
-            view_directory_contents(&context, view_camera, text_rect, offset, &font);
+            int mouse_ix = view_directory_contents(&context, view_camera, text_rect, offset, &font);
         EndDrawing();
+        
+        handle_key_presses(&context, &view_camera, text_rect, offset, mouse_ix);
     }
 
     filr_free_context(&context);
