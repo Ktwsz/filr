@@ -38,13 +38,13 @@ filr_context filr_init_context();
 
 void filr_free_context(filr_context *context);
 
-void filr_move_index(filr_context *context, size_t ix);
+void filr_move_index(filr_context *context, int ix);
 
 void filr_reset_index(filr_context *context);
 
 void filr_goto_directory(filr_context *context);
 
-char *filr_get_file_name(filr_context *context, size_t ix);
+cstr filr_get_name_cstr(filr_context *context, size_t ix);
 
 void filr_print_array(filr_context *context);
 

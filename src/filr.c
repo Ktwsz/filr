@@ -84,8 +84,16 @@ void filr_free_context(filr_context *context) {
 }
 
 
-void filr_move_index(filr_context *context, size_t ix) {
-    context->file_index = ix;
+void filr_move_index(filr_context *context, int di) {
+    int new_size = (int)context->file_index + di;
+
+    if (new_size < 0) {
+        context->file_index = 0;
+    } else if (new_size >= context->size) {
+        context->file_index = context->size - 1;
+    } else {
+        context->file_index = new_size;
+    }
 }
 
 void filr_reset_index(filr_context *context) {
@@ -109,16 +117,16 @@ void filr_goto_directory(filr_context* context) {
     load_directory(context);
 }
 
-
-char *filr_get_file_name(filr_context *context, size_t ix) {
-    return context->files[ix].name.str;
+cstr filr_get_name_cstr(filr_context *context, size_t ix) {
+    return context->files[ix].name;
 }
+
 
 void filr_print_array(filr_context *context) {
     printf("size: %d\n", context->size);
     for (size_t i = 0; i < context->size; ++i) {
         printf("i: %d str size: %d ", i, context->files[i].name.size);
-        printf("%s\n", filr_get_file_name(context, i));
+        printf("%s\n", filr_get_name_cstr(context, i).str);
     }
 
 }
