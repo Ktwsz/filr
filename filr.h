@@ -42,7 +42,7 @@ void filr_move_index(filr_context *context, int ix);
 
 void filr_reset_index(filr_context *context);
 
-void filr_action(filr_context *context);
+bool filr_action(filr_context *context);
 
 void filr_goto_directory(filr_context *context);
 

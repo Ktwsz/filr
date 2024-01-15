@@ -153,3 +153,15 @@ cstr cstr_parse_date(us day, us month, us year, us hour, us minute) {
 
     return result;
 }
+
+cstr cstr_strip_extension(cstr s) {
+    int i;
+    for (i = s.size-1; i >= 0; --i) {
+        if (s.str[i] == '.') break;
+    }
+
+    cstr result = cstr_init(s.size - i - 1);
+
+    sprintf(result.str, "%s", s.str + i + 1);
+    return result;
+}

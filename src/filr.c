@@ -101,11 +101,24 @@ void filr_reset_index(filr_context *context) {
 }
 
 
-void filr_action(filr_context *context) {
+bool filr_action(filr_context *context) {
     size_t ix = context->file_index;
     filr_file file = context->files[ix];
-    if (file.is_directory) filr_goto_directory(context);
 
+    if (file.is_directory) {
+        filr_goto_directory(context);
+        return true;
+    }
+
+    cstr full_path = cstr_concat(3, context->directory, CSTR_DASH, file.name);
+    ShellExecute(NULL,
+                 NULL,
+                 file.name.str,
+                 NULL,
+                 context->directory.str,
+                 0);
+
+    return false;
 }
 
 void filr_goto_directory(filr_context* context) {

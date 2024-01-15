@@ -36,16 +36,16 @@ void move_one_up(BASE_ARGS) {
 }
 
 void file_action(BASE_ARGS) {
-    filr_action(context);
-    filr_reset_index(context);
-    view_move_camera(context, view);
+    bool dir_change = filr_action(context);
+    if (dir_change) {
+        filr_reset_index(context);
+        view_move_camera(context, view);
+    }
 }
 
 void mouse_left_click(BASE_ARGS, inputs_mouse *mouse) {
     if (context->file_index == mouse->ix) {
-        filr_goto_directory(context);
-        filr_reset_index(context);
-        view_move_camera(context, view);
+        file_action(context, view);
     } else if (mouse->ix != -1) context->file_index = mouse->ix;
 }
 
