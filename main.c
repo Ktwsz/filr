@@ -45,7 +45,7 @@ void handle_key_presses(filr_context *context, view_t *view, int mouse_ix, float
             int step = (int) (*scroll_pos_sum / SCROLL_STEP);
             *scroll_pos_sum -= (float) (step) * SCROLL_STEP;
             filr_move_index(context, -step);
-            view_move_camera(context, view);
+            view_center_camera(context, view);
         }
     }
 }

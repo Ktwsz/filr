@@ -1,4 +1,5 @@
 #include "../view.h"
+#include "../cstr.h"
 
 #define FONT_DIR "resources/font/firacode.ttf"
 #define BG_IMG_DIR "resources/img/bg_image.png"
@@ -9,6 +10,10 @@
 #define PASSIVE_COLOR GetColor(0xC091ECFF)
 #define HIGHLIGHT_COLOR GetColor(0xFCB3FDFF)//(0xF1D4FBFF)
 #define BG_COLOR GetColor(0xB770EDFF)
+
+#define VIEW_NAME_CAP 40
+
+cstr CSTR_SPACE = { .str = " ", .size = 1 };
 
 Texture load_svg(const char *src, Vector2 size) {
     Image img = LoadImageSvg(src, size.y, size.y);
@@ -63,6 +68,18 @@ Texture get_file_icon(view_theme *theme, filr_file file) {
 }
 
 
+cstr get_row_str(filr_file file) {
+    return cstr_concat(5,
+                       cstr_cap(file.name, VIEW_NAME_CAP), CSTR_SPACE,
+                       cstr_parse_file_size(file.size), CSTR_SPACE,
+                       cstr_parse_date(file.last_edit_date.day,
+                                       file.last_edit_date.month,
+                                       file.last_edit_date.year,
+                                       file.last_edit_date.hour,
+                                       file.last_edit_date.minute));
+}
+
+
 int view_directory_contents(filr_context *context, view_t view) {
     size_t ix = (view.window.camera.y - view.window.offset.y) / view.window.text_size.y;
     int mouse_ix = -1;
@@ -82,14 +99,17 @@ int view_directory_contents(filr_context *context, view_t view) {
         if (is_selected) DrawRectangleRec(row_rect, view.theme.passive);
 
         Vector2 draw_icon_pos = {0, position.y - view.window.camera.y};
+
         DrawTextureV(get_file_icon(&view.theme, context->files[ix]),
                      draw_icon_pos,
                      RAYWHITE);
 
 
         Vector2 draw_text_pos = {position.x - view.window.camera.x, position.y - view.window.camera.y};
+        cstr row_str = get_row_str(context->files[ix]);
+
         DrawTextEx(view.theme.font,
-                   filr_get_name_cstr(context, ix).str,
+                   row_str.str,//filr_get_name_cstr(context, ix).str,
                    draw_text_pos,
                    (float)view.theme.font.baseSize,
                    2,
