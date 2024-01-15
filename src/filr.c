@@ -101,6 +101,13 @@ void filr_reset_index(filr_context *context) {
 }
 
 
+void filr_action(filr_context *context) {
+    size_t ix = context->file_index;
+    filr_file file = context->files[ix];
+    if (file.is_directory) filr_goto_directory(context);
+
+}
+
 void filr_goto_directory(filr_context* context) {
     size_t ix = context->file_index;
     cstr goto_directory = context->files[ix].name;
