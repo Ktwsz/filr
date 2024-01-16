@@ -165,3 +165,15 @@ cstr cstr_strip_extension(cstr s) {
     sprintf(result.str, "%s", s.str + i + 1);
     return result;
 }
+
+int cstr_hash(char *s) {
+    const int p = 53, m = 1000000009;
+    int pow = 1;
+
+    int result = 0;
+    while (*s) {
+        result = (result + (*s++ + 1) * pow ) % m;
+        pow *= p;
+    }
+    return result; 
+}

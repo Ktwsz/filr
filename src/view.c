@@ -1,15 +1,26 @@
 #include "../view.h"
 #include "../cstr.h"
 
-#define FONT_DIR "resources/font/firacode.ttf"
-#define BG_IMG_DIR "resources/img/bg_image.png"
+#include "theme_constants.c"
 
-#define FOLDER_ICON_DIR "resources/img/icons/folder.svg"
-#define FILE_ICON_DIR "resources/img/icons/file.svg"
+#define LOAD_SVG(a) view.theme.a##_texture = load_svg(a##_icon_dir, view.window.text_size)
 
-#define PASSIVE_COLOR GetColor(0xC091ECFF)
-#define HIGHLIGHT_COLOR GetColor(0xFCB3FDFF)//(0xF1D4FBFF)
-#define BG_COLOR GetColor(0xB770EDFF)
+#define C_EXT_HASH cstr_hash("c")
+#define H_EXT_HASH cstr_hash("h")
+#define CPP_EXT_HASH cstr_hash("cpp") 
+#define HPP_EXT_HASH cstr_hash("hpp") 
+#define EXE_EXT_HASH cstr_hash("exe") 
+#define HS_EXT_HASH cstr_hash("hs")
+#define HTML_EXT_HASH cstr_hash("html")
+#define JPG_EXT_HASH cstr_hash("jpg")
+#define PNG_EXT_HASH cstr_hash("png")
+#define JPEG_EXT_HASH cstr_hash("jpeg")
+#define GIF_EXT_HASH cstr_hash("gif")
+#define JAVA_EXT_HASH cstr_hash("java")
+#define JS_EXT_HASH cstr_hash("js")
+#define PDF_EXT_HASH cstr_hash("pdf")
+#define PY_EXT_HASH cstr_hash("py")
+#define ZIP_EXT_HASH cstr_hash("zip")
 
 #define VIEW_NAME_CAP 40
 
@@ -39,10 +50,20 @@ view_t view_init(int window_width, int window_height) {
 
     view.theme.bg_texture = LoadTexture(BG_IMG_DIR);
 
-    view.theme.folder_texture = load_svg(FOLDER_ICON_DIR, view.window.text_size);
-    view.theme.file_texture = load_svg(FILE_ICON_DIR, view.window.text_size);
+    LOAD_SVG(folder);
+    LOAD_SVG(file);
+    LOAD_SVG(c);
+    LOAD_SVG(cpp);
+    LOAD_SVG(exe);
+    LOAD_SVG(hs);
+    LOAD_SVG(html);
+    LOAD_SVG(img);
+    LOAD_SVG(java);
+    LOAD_SVG(js);
+    LOAD_SVG(pdf);
+    LOAD_SVG(py);
+    LOAD_SVG(zip);
     
-
     return view;
 }
 
@@ -64,13 +85,51 @@ Vector2 get_position(int ix, Vector2 text_size, Vector2 offset) {
 }
 
 Texture get_file_icon(view_theme *theme, filr_file file) {
-    return file.is_directory? theme->folder_texture : theme->file_texture;
+    if (file.is_directory) 
+        return theme->folder_texture;
+
+    cstr extension = cstr_strip_extension(file.name);
+    int hash = cstr_hash(extension.str);
+    if (C_EXT_HASH == hash)
+            return theme->c_texture;
+    if (H_EXT_HASH == hash)
+            return theme->c_texture;
+    if (CPP_EXT_HASH == hash)
+            return theme->cpp_texture;
+    if (HPP_EXT_HASH == hash)
+            return theme->cpp_texture;
+    if (EXE_EXT_HASH == hash)
+            return theme->exe_texture;
+    if (HS_EXT_HASH == hash)
+            return theme->hs_texture;
+    if (HTML_EXT_HASH == hash)
+            return theme->html_texture;
+    if (JPG_EXT_HASH == hash)
+            return theme->img_texture;
+    if (PNG_EXT_HASH == hash)
+            return theme->img_texture;
+    if (JPEG_EXT_HASH == hash)
+            return theme->img_texture;
+    if (PNG_EXT_HASH == hash)
+            return theme->img_texture;
+    if (JAVA_EXT_HASH == hash)
+            return theme->java_texture;
+    if (JS_EXT_HASH == hash)
+            return theme->js_texture;
+    if (PDF_EXT_HASH == hash)
+            return theme->pdf_texture;
+    if (PY_EXT_HASH == hash)
+            return theme->py_texture;
+    if (ZIP_EXT_HASH)
+            return theme->zip_texture;
+
+    return theme->file_texture;
 }
 
 
-cstr get_row_str(filr_file file) {
+cstr get_row_str(filr_file file, int name_cap) {
     return cstr_concat(5,
-                       cstr_cap(file.name, VIEW_NAME_CAP), CSTR_SPACE,
+                       cstr_cap(file.name, name_cap), CSTR_SPACE,
                        cstr_parse_file_size(file.size), CSTR_SPACE,
                        cstr_parse_date(file.last_edit_date.day,
                                        file.last_edit_date.month,
@@ -84,6 +143,11 @@ int view_directory_contents(filr_context *context, view_t view) {
     size_t ix = (view.window.camera.y - view.window.offset.y) / view.window.text_size.y;
     int mouse_ix = -1;
     Vector2 mouse_position = GetMousePosition();
+
+    const int padding = 5;
+    int window_width = view.window.text_size.x;
+    int max_text_width = (window_width - 22) / view.theme.font.baseSize;
+    if (max_text_width > VIEW_NAME_CAP) max_text_width = VIEW_NAME_CAP;
 
     for (; ix < context->size; ++ix) {
         Vector2 position = get_position(ix, view.window.text_size, view.window.offset);
@@ -105,11 +169,11 @@ int view_directory_contents(filr_context *context, view_t view) {
                      RAYWHITE);
 
 
-        Vector2 draw_text_pos = {position.x - view.window.camera.x, position.y - view.window.camera.y};
-        cstr row_str = get_row_str(context->files[ix]);
+        Vector2 draw_text_pos = {position.x - view.window.camera.x + padding, position.y - view.window.camera.y};
+        cstr row_str = get_row_str(context->files[ix], max_text_width);
 
         DrawTextEx(view.theme.font,
-                   row_str.str,//filr_get_name_cstr(context, ix).str,
+                   row_str.str,
                    draw_text_pos,
                    (float)view.theme.font.baseSize,
                    2,

@@ -15,7 +15,7 @@ typedef struct {
     Color passive, highlight, bg;
     Font font;
     Texture2D bg_texture;
-    Texture2D folder_texture, file_texture;
+    Texture2D folder_texture, file_texture, c_texture, cpp_texture, exe_texture, hs_texture, html_texture, img_texture, java_texture, js_texture, pdf_texture, py_texture, zip_texture;
 } view_theme;
 
 typedef struct {

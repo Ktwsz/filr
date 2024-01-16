@@ -26,4 +26,8 @@ cstr cstr_parse_file_size(int file_size);
 
 cstr cstr_parse_date(us day, us month, us year, us hour, us minute);
 
+cstr cstr_strip_extension(cstr s);
+
+int cstr_hash(char *s);
+
 #endif
