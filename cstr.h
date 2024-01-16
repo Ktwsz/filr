@@ -11,22 +11,23 @@ typedef struct {
 
 typedef unsigned short us;
 
-cstr cstr_init(size_t size);
-cstr cstr_init_name(const char *s);
+void cstr_init(cstr *dst, size_t size);
 
-void cstr_free(cstr *str);
+void cstr_init_name(cstr *dst, const char *src);
 
-cstr cstr_concat(int count, ...);
+void cstr_copy(cstr *dst, cstr src);
 
-cstr cstr_strip_directory(cstr str);
+void cstr_concat(cstr*dst, int count, ...);
 
-cstr cstr_cap(cstr str, int len);
+void cstr_strip_directory(cstr *dst, cstr src);
 
-cstr cstr_parse_file_size(int file_size);
+void cstr_cap(cstr *dst, cstr src, int len);
 
-cstr cstr_parse_date(us day, us month, us year, us hour, us minute);
+void cstr_parse_file_size(cstr *dst, int file_size);
 
-cstr cstr_strip_extension(cstr s);
+void cstr_parse_date(cstr *dst, us day, us month, us year, us hour, us minute);
+
+void cstr_strip_extension(cstr *dst, cstr src);
 
 int cstr_hash(char *s);
 

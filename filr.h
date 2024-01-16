@@ -34,7 +34,7 @@ void filr_file_array_append(filr_context* context, filr_file* new_elem);
 
 bool load_directory(filr_context *context);
 
-filr_context filr_init_context();
+void filr_init_context(filr_context *context);
 
 void filr_free_context(filr_context *context);
 

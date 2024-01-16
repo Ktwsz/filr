@@ -2,10 +2,8 @@
 
 #include <math.h>
 
-inputs_mouse inputs_init_mouse() {
-    inputs_mouse mouse = {0};
-    mouse.ix = -1;
-    return mouse;
+void inputs_init_mouse(inputs_mouse *mouse) {
+    mouse->ix = -1;
 }
 
 #define BASE_ARGS filr_context *context, view_t *view

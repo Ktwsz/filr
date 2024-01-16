@@ -32,7 +32,7 @@ void filr_parse_date(filr_date *dst, const FILETIME src) {
 }
 
 void filr_parse_file(filr_file *dst, WIN32_FIND_DATA src) { 
-    dst->name = cstr_init_name(src.cFileName);
+    cstr_init_name(&(dst->name), src.cFileName);
 
     dst->is_directory = src.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
 
@@ -54,7 +54,7 @@ bool load_directory(filr_context *context) {
     }
 
     do {
-        filr_file next_file = {0};
+        filr_file next_file;
 
         filr_parse_file(&next_file, file);
 
@@ -66,17 +66,13 @@ bool load_directory(filr_context *context) {
     return true;
 }
 
-filr_context filr_init_context() {
-    filr_context context = {0};
-
-    context.capacity = INIT_ARRAY_CAPACITY;
+void filr_init_context(filr_context *context) {
+    context->capacity = INIT_ARRAY_CAPACITY;
     char *HOME = getenv("HOMEPATH");
     printf("%s\n", HOME);
-    context.directory = cstr_init_name(HOME);
+    cstr_init_name(&(context->directory), HOME);
     
-    load_directory(&context);
-
-    return context;
+    load_directory(context);
 }
 
 void filr_free_context(filr_context *context) {
@@ -110,7 +106,6 @@ bool filr_action(filr_context *context) {
         return true;
     }
 
-    cstr full_path = cstr_concat(3, context->directory, CSTR_DASH, file.name);
     ShellExecute(NULL,
                  NULL,
                  file.name.str,
@@ -126,11 +121,15 @@ void filr_goto_directory(filr_context* context) {
     cstr goto_directory = context->files[ix].name;
 
     if (strcmp(goto_directory.str, "..") == 0) {
-        cstr tmp = cstr_strip_directory(context->directory);
-        context->directory = tmp;
+        cstr tmp;
+        cstr_strip_directory(&tmp, context->directory);
+        
+        cstr_copy(&(context->directory), tmp);
     } else if (strcmp(goto_directory.str, ".") != 0) {
-        cstr tmp = cstr_concat(3, context->directory, CSTR_DASH, goto_directory);
-        context->directory = tmp;
+        cstr tmp;
+        cstr_concat(&tmp, 3, context->directory, CSTR_DASH, goto_directory);
+
+        cstr_copy(&(context->directory), tmp);
     }
 
     context->size = 0;

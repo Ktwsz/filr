@@ -12,14 +12,18 @@
 
 int main(void) {
 
-    filr_context context = filr_init_context();
-    inputs_mouse mouse = inputs_init_mouse();
+    filr_context context = {0};
+    filr_init_context(&context);
+
+    inputs_mouse mouse = {0};
+    inputs_init_mouse(&mouse);
 
     SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_RESIZABLE);
 
     InitWindow(INIT_WINDOW_WIDTH, INIT_WINDOW_HEIGHT, "chuj");
 
-    view_t view = view_init(INIT_WINDOW_WIDTH, INIT_WINDOW_HEIGHT);
+    view_t view;
+    view_init(&view, INIT_WINDOW_WIDTH, INIT_WINDOW_HEIGHT);
 
 
     int previous_width = INIT_WINDOW_WIDTH;

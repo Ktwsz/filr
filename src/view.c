@@ -3,7 +3,8 @@
 
 #include "theme_constants.c"
 
-#define LOAD_SVG(a) view.theme.a##_texture = load_svg(a##_icon_dir, view.window.text_size)
+#define LOAD_SVG(a) view->theme.a##_texture = load_svg(a##_icon_dir, view->window.text_size)
+#define UNLOAD(a) UnloadTexture(view.theme.a##_texture)
 
 #define C_EXT_HASH cstr_hash("c")
 #define H_EXT_HASH cstr_hash("h")
@@ -33,22 +34,19 @@ Texture load_svg(const char *src, Vector2 size) {
     return t;
 }
 
-view_t view_init(int window_width, int window_height) {
-    view_t view = {0};
+void view_init(view_t *view, int window_width, int window_height) {
+    view->window.camera = (Rectangle) {.x = 0, .y = 0, .width = window_width, .height = window_height};
+    view->window.offset = (Vector2) {.x = 30, .y = 10};
+    view->window.text_size = (Vector2) {.x = window_width-30, .y = 30};
+
+    view->theme.font = LoadFontEx(FONT_DIR, 32, 0, 250);
+
+    view->theme.passive = PASSIVE_COLOR;
+    view->theme.highlight = HIGHLIGHT_COLOR;
+    view->theme.bg = BG_COLOR;
 
 
-    view.window.camera = (Rectangle) {.x = 0, .y = 0, .width = window_width, .height = window_height};
-    view.window.offset = (Vector2) {.x = 30, .y = 10};
-    view.window.text_size = (Vector2) {.x = window_width-30, .y = 30};
-
-    view.theme.font = LoadFontEx(FONT_DIR, 32, 0, 250);
-
-    view.theme.passive = PASSIVE_COLOR;
-    view.theme.highlight = HIGHLIGHT_COLOR;
-    view.theme.bg = BG_COLOR;
-
-
-    view.theme.bg_texture = LoadTexture(BG_IMG_DIR);
+    view->theme.bg_texture = LoadTexture(BG_IMG_DIR);
 
     LOAD_SVG(folder);
     LOAD_SVG(file);
@@ -63,8 +61,6 @@ view_t view_init(int window_width, int window_height) {
     LOAD_SVG(pdf);
     LOAD_SVG(py);
     LOAD_SVG(zip);
-    
-    return view;
 }
 
 void view_draw_background(view_t view) {
@@ -88,7 +84,9 @@ Texture get_file_icon(view_theme *theme, filr_file file) {
     if (file.is_directory) 
         return theme->folder_texture;
 
-    cstr extension = cstr_strip_extension(file.name);
+    cstr extension;
+    cstr_strip_extension(&extension, file.name);
+
     int hash = cstr_hash(extension.str);
     if (C_EXT_HASH == hash)
             return theme->c_texture;
@@ -127,15 +125,21 @@ Texture get_file_icon(view_theme *theme, filr_file file) {
 }
 
 
-cstr get_row_str(filr_file file, int name_cap) {
-    return cstr_concat(5,
-                       cstr_cap(file.name, name_cap), CSTR_SPACE,
-                       cstr_parse_file_size(file.size), CSTR_SPACE,
-                       cstr_parse_date(file.last_edit_date.day,
-                                       file.last_edit_date.month,
-                                       file.last_edit_date.year,
-                                       file.last_edit_date.hour,
-                                       file.last_edit_date.minute));
+void get_row_str(cstr *row, filr_file file, int name_cap) {
+    cstr file_capped, file_size, date;
+    cstr_cap(&file_capped, file.name, name_cap);
+    cstr_parse_file_size(&file_size, file.size);
+    cstr_parse_date(&date, file.last_edit_date.day,
+                           file.last_edit_date.month,
+                           file.last_edit_date.year,
+                           file.last_edit_date.hour,
+                           file.last_edit_date.minute);
+
+    cstr_concat(row,
+                5,
+                file_capped, CSTR_SPACE,
+                file_size, CSTR_SPACE,
+                date);
 }
 
 
@@ -170,7 +174,8 @@ int view_directory_contents(filr_context *context, view_t view) {
 
 
         Vector2 draw_text_pos = {position.x - view.window.camera.x + padding, position.y - view.window.camera.y};
-        cstr row_str = get_row_str(context->files[ix], max_text_width);
+        cstr row_str;
+        get_row_str(&row_str, context->files[ix], max_text_width);
 
         DrawTextEx(view.theme.font,
                    row_str.str,
@@ -231,6 +236,18 @@ void view_scroll_bar(filr_context *context, size_t ix, view_t view) {
 }
 
 void view_free(view_t view) {
-    UnloadTexture(view.theme.bg_texture);
-    UnloadTexture(view.theme.folder_texture);
+    UNLOAD(bg);
+    UNLOAD(folder);
+    UNLOAD(file);
+    UNLOAD(c);
+    UNLOAD(cpp);
+    UNLOAD(exe);
+    UNLOAD(hs);
+    UNLOAD(html);
+    UNLOAD(img);
+    UNLOAD(java);
+    UNLOAD(js);
+    UNLOAD(pdf);
+    UNLOAD(py);
+    UNLOAD(zip);
 }

@@ -17,7 +17,7 @@ typedef enum {
     INPUT
 } mode;
 
-inputs_mouse inputs_init_mouse();
+void inputs_init_mouse(inputs_mouse *mouse);
 
 void handle_key_presses(filr_context *context, view_t *view, inputs_mouse *mouse);
 

@@ -33,7 +33,7 @@ void view_resize(view_t *view, int window_width, int window_height);
 
 void view_scroll_bar(filr_context *context, size_t ix, view_t view);
 
-view_t view_init(int window_width, int window_height);
+void view_init(view_t *view, int window_width, int window_height);
 
 void view_draw_background(view_t view);
 
