@@ -12,8 +12,12 @@
 
 int main(void) {
 
+    filr_cmp_array cmp_array;
+    filr_init_cmp_array(&cmp_array);
+
     filr_context context = {0};
     filr_init_context(&context);
+    qsort(&(context.files[2]), context.size - 2, sizeof(filr_file), cmp_array.array[cmp_array.ix]);
 
     inputs_mouse mouse = {0};
     inputs_init_mouse(&mouse);
@@ -47,7 +51,7 @@ int main(void) {
             mouse.ix = view_directory_contents(&context, view);
         EndDrawing();
         
-        handle_key_presses(&context, &view, &mouse);
+        handle_key_presses(&context, &view, &mouse, &cmp_array);
     }
 
     filr_free_context(&context);

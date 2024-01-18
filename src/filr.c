@@ -1,5 +1,6 @@
 #include "../filr.h"
 #include <string.h>
+
 #include "windows.h"
 
 cstr CSTR_DASH = { .str = "/", .size = 1 };
@@ -75,6 +76,19 @@ void filr_init_context(filr_context *context) {
     load_directory(context);
 }
 
+
+void filr_init_cmp_array(filr_cmp_array *array) {
+    array->size = 6;
+    array->ix = 0;
+
+    array->array[0] = filr_file_comparator_basic;
+    array->array[1] = filr_file_comparator_size;
+    array->array[2] = filr_file_comparator_size_inv;
+    array->array[3] = file_file_comparator_edit_date;
+    array->array[4] = file_file_comparator_extension;
+    array->array[5] = file_file_comparator_alphabetic;
+}
+
 void filr_free_context(filr_context *context) {
     free(context->files);
 }
@@ -148,4 +162,64 @@ void filr_print_array(filr_context *context) {
         printf("%s\n", filr_get_name_cstr(context, i).str);
     }
 
+}
+
+int filr_file_comparator_basic(const void *p1, const void *p2) {
+    filr_file f1 = *((filr_file*)p1);
+    filr_file f2 = *((filr_file*)p2);
+
+    if (f1.is_directory == f2.is_directory)
+        return strcmp(f1.name.str, f2.name.str);
+
+    if (f1.is_directory) return 1;
+    return -1;
+}
+
+int filr_file_comparator_size(const void *p1, const void *p2) {
+    filr_file f1 = *((filr_file*)p1);
+    filr_file f2 = *((filr_file*)p2);
+    
+    return f1.size - f2.size;
+}
+
+int filr_file_comparator_size_inv(const void *p1, const void *p2) {
+    return -filr_file_comparator_size(p1, p2);
+
+}
+
+int file_file_comparator_edit_date(const void *p1, const void *p2) {
+    filr_file f1 = *((filr_file*)p1);
+    filr_file f2 = *((filr_file*)p2);
+
+    filr_date d1 = f1.last_edit_date;
+    filr_date d2 = f2.last_edit_date;
+
+    if (d1.year != d2.year)
+        return d1.year - d2.year;
+    if (d1.month != d2.month)
+        return d1.month - d2.month;
+    if  (d1.day != d2.day)
+        return d1.day - d2.day;
+    if (d1.hour != d2.hour)
+        return d1.hour - d2.hour;
+
+    return d1.minute - d2.minute;
+}
+
+int file_file_comparator_extension(const void *p1, const void *p2) {
+    filr_file f1 = *((filr_file*)p1);
+    filr_file f2 = *((filr_file*)p2);
+
+    cstr ext1, ext2;
+    cstr_strip_extension(&ext1, f1.name);
+    cstr_strip_extension(&ext2, f2.name);
+
+    return strcmp(ext1.str, ext2.str);
+}
+
+int file_file_comparator_alphabetic(const void *p1, const void *p2) {
+    filr_file f1 = *((filr_file*)p1);
+    filr_file f2 = *((filr_file*)p2);
+    
+    return strcmp(f1.name.str, f2.name.str);
 }
