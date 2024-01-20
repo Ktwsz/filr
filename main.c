@@ -26,6 +26,8 @@ int main(void) {
 
     InitWindow(INIT_WINDOW_WIDTH, INIT_WINDOW_HEIGHT, "chuj");
 
+    SetTargetFPS(30);
+
     view_t view;
     view_init(&view, INIT_WINDOW_WIDTH, INIT_WINDOW_HEIGHT);
 

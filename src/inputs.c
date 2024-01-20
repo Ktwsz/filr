@@ -7,6 +7,7 @@ void inputs_init(inputs_t *input) {
     input->mouse_ix = -1;
     input->scroll_pos = 0;
     input->mode = INPUTS_NORMAL;    
+    input->scroll_frames_count = 0;
 }
 
 #define BASE_ARGS filr_context *context, view_t *view
@@ -26,6 +27,7 @@ void inputs_init(inputs_t *input) {
 #define HANDLE_INPUT(input, ...) if (IsKeyPressed(key_##input)) input(__VA_ARGS__)
 #define HANDLE_INPUT_MOUSE(input, ...) if (IsMouseButtonPressed(key_##input)) input(__VA_ARGS__)
 #define HANDLE_INPUT_MOUSE_SCROLL(...) mouse_scroll(__VA_ARGS__)
+#define HANDLE_INPUT_DOWN(input, ...) if (IsKeyDown(key_##input)) input(__VA_ARGS__)
 
 
 void center_camera(BASE_ARGS) {
@@ -68,7 +70,6 @@ void scroll(INPUTS_ARGS, float scroll_move) {
 }
 
 
-
 void mouse_scroll(INPUTS_ARGS) {
     float mouse_wheel_move = 0;
 
@@ -78,11 +79,17 @@ void mouse_scroll(INPUTS_ARGS) {
 }
 
 void key_scroll_down(INPUTS_ARGS) {
-    scroll(context, view, input, SCROLL_SPEED_CAP);
+    if (input->scroll_frames_count < SCROLL_FRAME_THRESHOLD)
+        input->scroll_frames_count++;
+    else
+        scroll(context, view, input, -SCROLL_KEY_SPEED);
 }
 
 void key_scroll_up(INPUTS_ARGS) {
-    scroll(context, view, input, -SCROLL_SPEED_CAP);
+    if (input->scroll_frames_count < SCROLL_FRAME_THRESHOLD)
+        input->scroll_frames_count++;
+    else
+        scroll(context, view, input, SCROLL_KEY_SPEED);
 }
 
 void change_file_sorting(filr_context *context, filr_cmp_array *cmp_array) {
@@ -115,6 +122,12 @@ void handle_key_presses(ALL_ARGS) {
         HANDLE_INPUT_MOUSE(mouse_left_click, context, view, input);
 
         HANDLE_INPUT_MOUSE_SCROLL(context, view, input);
+
+        HANDLE_INPUT_DOWN(key_scroll_down, context, view, input);
+
+        HANDLE_INPUT_DOWN(key_scroll_up, context, view, input);
+
+        if (IsKeyUp(key_key_scroll_down) && IsKeyUp(key_key_scroll_up))
+            input->scroll_frames_count = 0;
     }
-    //TODO: add scroll with key up/key down
 }

@@ -6,6 +6,8 @@
 
 #define SCROLL_SPEED_CAP 1.0
 #define SCROLL_STEP 0.5
+#define SCROLL_KEY_SPEED 0.25
+#define SCROLL_FRAME_THRESHOLD 10
 
 typedef enum {
     INPUTS_NORMAL, 
@@ -16,6 +18,7 @@ typedef struct {
     int mouse_ix;
     float scroll_pos;
     mode_enum mode;
+    int scroll_frames_count;
 } inputs_t;
 
 
