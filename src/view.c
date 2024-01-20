@@ -38,6 +38,7 @@ void view_init(view_t *view, int window_width, int window_height) {
     view->window.camera = (Rectangle) {.x = 0, .y = 0, .width = window_width, .height = window_height};
     view->window.offset = (Vector2) {.x = 30, .y = 10};
     view->window.text_size = (Vector2) {.x = window_width-30, .y = 30};
+    view->window.hide_dotfiles = true;
 
     view->theme.font = LoadFontEx(FONT_DIR, 32, 0, 250);
 
@@ -153,9 +154,14 @@ int view_directory_contents(filr_context *context, view_t view) {
     int max_text_width = (window_width - 22) / view.theme.font.baseSize;
     if (max_text_width > VIEW_NAME_CAP) max_text_width = VIEW_NAME_CAP;
 
-    for (; ix < context->size; ++ix) {
-        Vector2 position = get_position(ix, view.window.text_size, view.window.offset);
-        if (position.y >= view.window.camera.y + view.window.camera.height) break;
+    for (Vector2 position = get_position(ix, view.window.text_size, view.window.offset); 
+            position.y < view.window.camera.y + view.window.camera.height; position.y += view.window.text_size.y) {
+
+        if (view.window.hide_dotfiles) {
+            while (ix < context->size && context->files[ix].is_dotfile) ix++;
+        }
+        if (ix >= context->size)
+            break;
 
         bool is_selected = context->file_index == ix;
 
@@ -188,19 +194,11 @@ int view_directory_contents(filr_context *context, view_t view) {
         
         if (CheckCollisionPointRec(mouse_position, row_rect))
             mouse_ix = ix;
+
+        ix++;
     }
 
     view_scroll_bar(context, ix, view);
-
-    for (Vector2 position = get_position(ix, view.window.text_size, view.window.offset); 
-            position.y < view.window.camera.y + view.window.camera.height; position.y += view.window.text_size.y) {
-        DrawTextEx(view.theme.font,
-                   "~",
-                   position,
-                   (float)view.theme.font.baseSize,
-                   2,
-                   view.theme.highlight);
-    }
 
     return mouse_ix;
 }

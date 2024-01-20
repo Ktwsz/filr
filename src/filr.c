@@ -39,6 +39,8 @@ void filr_parse_file(filr_file *dst, WIN32_FIND_DATA src) {
 
     dst->size = src.nFileSizeHigh * (MAXDWORD + 1) + src.nFileSizeLow;
     filr_parse_date(&(dst->last_edit_date), src.ftLastWriteTime);
+
+    dst->is_dotfile = strcmp(dst->name.str, "..") && strcmp(dst->name.str, ".") && dst->name.str[0] == '.';
 }
 
 
@@ -93,16 +95,26 @@ void filr_free_context(filr_context *context) {
     free(context->files);
 }
 
+size_t filr_find_next_index(filr_context *context, int range, int step) {
+    size_t ix = context->file_index + step;
+    for (int ctr = 0; ix >= 0 && ix < context->size && ctr < range; ctr++) {
+        while (ix >= 0 && ix < context->size && context->files[ix].is_dotfile) ix += step;
+    }
 
-void filr_move_index(filr_context *context, int di) {
-    int new_size = (int)context->file_index + di;
+    return ix;
+}
 
-    if (new_size < 0) {
+void filr_move_index(filr_context *context, int di, bool skip_dotfiles) {
+    int new_index = (skip_dotfiles)? filr_find_next_index(context, (di > 0)? di : -di, (di > 0)? 1 : -1) : context->file_index + di;
+    
+    //int new_size = (int)context->file_index + di;
+
+    if (new_index < 0) {
         context->file_index = 0;
-    } else if (new_size >= context->size) {
+    } else if (new_index >= context->size) {
         context->file_index = context->size - 1;
     } else {
-        context->file_index = new_size;
+        context->file_index = new_index;
     }
 }
 

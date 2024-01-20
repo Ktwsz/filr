@@ -16,6 +16,7 @@ typedef struct {
 typedef struct {
     cstr name;
     bool is_directory;
+    bool is_dotfile;
     size_t size;
     filr_date last_edit_date;
 } filr_file;
@@ -46,7 +47,7 @@ void filr_init_cmp_array(filr_cmp_array *array);
 
 void filr_free_context(filr_context *context);
 
-void filr_move_index(filr_context *context, int ix);
+void filr_move_index(filr_context *context, int di, bool skip_dotfiles);
 
 void filr_reset_index(filr_context *context);
 

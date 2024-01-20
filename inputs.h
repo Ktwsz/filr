@@ -7,18 +7,20 @@
 #define SCROLL_SPEED_CAP 1.0
 #define SCROLL_STEP 0.5
 
-typedef struct {
-    int ix;
-    float scroll_pos;
-} inputs_mouse;
-
 typedef enum {
-    NORMAL, 
-    INPUT
-} mode;
+    INPUTS_NORMAL, 
+    INPUTS_INPUT
+} mode_enum;
 
-void inputs_init_mouse(inputs_mouse *mouse);
+typedef struct {
+    int mouse_ix;
+    float scroll_pos;
+    mode_enum mode;
+} inputs_t;
 
-void handle_key_presses(filr_context *context, view_t *view, inputs_mouse *mouse, filr_cmp_array *cmp_array);
+
+void inputs_init(inputs_t *input);
+
+void handle_key_presses(filr_context *context, view_t *view, inputs_t *input, filr_cmp_array *cmp_array);
 
 #endif

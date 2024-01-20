@@ -19,8 +19,8 @@ int main(void) {
     filr_init_context(&context);
     qsort(&(context.files[2]), context.size - 2, sizeof(filr_file), cmp_array.array[cmp_array.ix]);
 
-    inputs_mouse mouse = {0};
-    inputs_init_mouse(&mouse);
+    inputs_t input = {0};
+    inputs_init(&input);
 
     SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_RESIZABLE);
 
@@ -48,10 +48,10 @@ int main(void) {
         BeginDrawing();
             view_draw_background(view);
 
-            mouse.ix = view_directory_contents(&context, view);
+            input.mouse_ix = view_directory_contents(&context, view);
         EndDrawing();
         
-        handle_key_presses(&context, &view, &mouse, &cmp_array);
+        handle_key_presses(&context, &view, &input, &cmp_array);
     }
 
     filr_free_context(&context);

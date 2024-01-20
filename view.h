@@ -9,6 +9,7 @@ typedef struct {
     Rectangle camera;
     Vector2 text_size;
     Vector2 offset;
+    bool hide_dotfiles;
 } view_window;
 
 typedef struct {
