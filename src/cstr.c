@@ -9,6 +9,7 @@
 
 void cstr_init(cstr *dst, size_t size) {
     dst->size = size;
+    memset(dst->str, 0, MAX_STR_LEN);
 }
 
 

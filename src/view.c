@@ -39,8 +39,13 @@ void view_init(view_t *view, int window_width, int window_height) {
     view->size = (Rectangle) {.x = 0, .y = 0, .width = window_width, .height = window_height};
     view->show_input = false;
 
+    view->header.offset = (Vector2) {.x = 0, .y = 0};
+    view->header.camera = (Rectangle) {.x = 0, .y = 0, .width = window_width, .height = 30};
+    view->header.text_size = (Vector2) {.x = view->header.camera.width, .y = view->header.camera.height};
+
     view->window.offset = (Vector2) {.x = 0, .y = 40};
     view->window.camera = (Rectangle) {.x = 0, .y = 0, .width = window_width - view->window.offset.x, .height = window_height - view->window.offset.y};
+
     view->window.text_size = (Vector2) {.x = view->window.camera.width, .y = 30};
     view->window.hide_dotfiles = true;
 
@@ -149,41 +154,42 @@ void get_row_str(cstr *row, filr_file file, int name_cap) {
 
 
 void view_directory(filr_context *context, view_window *window, view_theme *theme, const void *inputs_ptr, mouse_input_callback_t mouse_input_callback) {
-    size_t ix = ceil(window->camera.y / window->text_size.y);
+    float ix_f = ceil(window->camera.y / window->text_size.y);
+    int draw_ix = (int)ix_f;
+    int file_ix = 0;
+
     if (window->hide_dotfiles) {
-        int i = 0;
-        for (int ctr = 0; ctr < ix; ++ctr) {
-            while (i < context->size && context->files[i].is_dotfile) i++;
+        for (int ctr = 0; ctr < draw_ix; ++ctr, ++file_ix) {
+            while (file_ix + 1 < context->size && context->files[file_ix + 1].is_dotfile) file_ix++;
         }
-        ix = i;
     }
 
     const float padding = 40.0;
     int max_text_width = (int) ((window->camera.width - padding) / theme->font.baseSize);
 
-    for (Vector2 position = get_position(ix, window->text_size); 
+    for (Vector2 position = get_position(draw_ix, window->text_size); 
             position.y < window->camera.y + window->camera.height;
             position.y += window->text_size.y) {
 
         if (window->hide_dotfiles) {
-            while (ix < context->size && context->files[ix].is_dotfile) ix++;
+            while (file_ix < context->size && context->files[file_ix].is_dotfile) file_ix++;
         }
-        if (ix >= context->size)
+        if (file_ix >= context->size)
             break;
 
-        bool is_selected = context->file_index == ix;
+        bool is_selected = context->file_index == file_ix;
 
-        Rectangle row_rect = (Rectangle) {window->offset.x,
-                                          window->offset.y + position.y - window->camera.y,
-                                          window->text_size.x,
-                                          window->text_size.y};
+        Rectangle row_rect = { .x = window->offset.x,
+                               .y = window->offset.y + position.y - window->camera.y,
+                               .width = window->text_size.x,
+                               .height = window->text_size.y };
 
         if (is_selected) DrawRectangleRec(row_rect, theme->passive);
 
         Vector2 draw_icon_pos = {row_rect.x, row_rect.y};
         
 
-        DrawTextureV(get_file_icon(theme, context->files[ix]),
+        DrawTextureV(get_file_icon(theme, context->files[file_ix]),
                      draw_icon_pos,
                      RAYWHITE);
 
@@ -191,7 +197,7 @@ void view_directory(filr_context *context, view_window *window, view_theme *them
         Vector2 draw_text_pos = {row_rect.x + padding, row_rect.y};
 
         cstr row_str;
-        get_row_str(&row_str, context->files[ix], max_text_width);
+        get_row_str(&row_str, context->files[file_ix], max_text_width);
 
         DrawTextEx(theme->font,
                    row_str.str,
@@ -201,12 +207,12 @@ void view_directory(filr_context *context, view_window *window, view_theme *them
                    theme->highlight);
 
 
-        mouse_input_callback(inputs_ptr, row_rect, ix);
+        mouse_input_callback(inputs_ptr, row_rect, file_ix);
 
-        ix++;
+        file_ix++;
     }
 
-    view_scroll_bar(context, ix, window, theme);
+    view_scroll_bar(context, file_ix, window, theme);
 }
 
 void view_view(filr_context *context, view_t *view, const void *inputs_ptr, mouse_input_callback_t mouse_input_callback) {
@@ -217,7 +223,21 @@ void view_view(filr_context *context, view_t *view, const void *inputs_ptr, mous
         view_input(context, &view->input, &view->theme);
 }
 
-void view_header(filr_context *context, view_window *window, view_theme *theme) {}
+void view_header(filr_context *context, view_window *header, view_theme *theme) {
+    Rectangle header_rect = {.x = header->offset.x + header->camera.x,
+                             .y = header->offset.y + header->camera.y,
+                             .width = header->camera.width,
+                             .height = header->camera.height};
+
+    DrawRectangleRec(header_rect, theme->passive);
+
+    DrawTextEx(theme->font,
+               context->directory.str,
+               (Vector2){header_rect.x, header_rect.y},
+               (float)theme->font.baseSize,
+               2,
+               theme->highlight);
+}
 
 void view_input(filr_context *context, view_window *window, view_theme *theme) {}
 
@@ -254,6 +274,10 @@ void view_handle_resize(filr_context *context, view_t *view) {
 
     view->size.width = window_width;
     view->size.height = window_height;
+
+    view->header.camera.width = window_width - view->header.offset.x;
+    view->header.camera.height = window_height - view->header.offset.y;
+    view->header.text_size.x = view->header.camera.width;
 
     view->window.camera.width = window_width - view->window.offset.x;
     view->window.camera.height = window_height - view->window.offset.y;

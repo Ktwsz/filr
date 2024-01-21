@@ -108,8 +108,6 @@ size_t filr_find_next_index(filr_context *context, int range, int step) {
 void filr_move_index(filr_context *context, int di, bool skip_dotfiles) {
     int new_index = (skip_dotfiles)? filr_find_next_index(context, (di > 0)? di : -di, (di > 0)? 1 : -1) : context->file_index + di;
     
-    //int new_size = (int)context->file_index + di;
-
     if (new_index < 0) {
         context->file_index = 0;
     } else if (new_index >= context->size) {
