@@ -31,33 +31,20 @@ int main(void) {
     view_t view;
     view_init(&view, INIT_WINDOW_WIDTH, INIT_WINDOW_HEIGHT);
 
-
-    int previous_width = INIT_WINDOW_WIDTH;
-    int previous_height = INIT_WINDOW_HEIGHT;
-
     while (!WindowShouldClose()) {
-        int window_width = GetScreenWidth();
-        int window_height = GetScreenHeight();
-
-        bool did_resize = window_width != previous_width || window_height != previous_height;
-        if (did_resize) {
-            view_resize(&view, window_width, window_height);
-            view_center_camera(&context, &view);
-            previous_width = window_width;
-            previous_height = window_height;
-        }
+        view_handle_resize(&context, &view);
 
         BeginDrawing();
-            view_draw_background(view);
+            view_draw_background(&view);
 
-            input.mouse_ix = view_directory_contents(&context, view);
+            view_view(&context, &view, &input, mouse_input_callback);
         EndDrawing();
         
         handle_key_presses(&context, &view, &input, &cmp_array);
     }
 
     filr_free_context(&context);
-    view_free(view);
+    view_free(&view);
 
     CloseWindow();
     return 0;

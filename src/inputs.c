@@ -92,11 +92,12 @@ void key_scroll_up(INPUTS_ARGS) {
         scroll(context, view, input, SCROLL_KEY_SPEED);
 }
 
-void change_file_sorting(filr_context *context, filr_cmp_array *cmp_array) {
+void change_file_sorting(BASE_ARGS, filr_cmp_array *cmp_array) {
     cmp_array->ix = (cmp_array->ix + 1) % cmp_array->size;
     size_t ix = cmp_array->ix;
 
     qsort(&(context->files[2]), context->size - 2, sizeof(filr_file), cmp_array->array[ix]);
+    view_center_camera(context, view);
 }
 
 void view_dotfiles(BASE_ARGS) {
@@ -115,7 +116,7 @@ void handle_key_presses(ALL_ARGS) {
 
         HANDLE_INPUT(file_action, context, view);
 
-        HANDLE_INPUT(change_file_sorting, context, cmp_array);
+        HANDLE_INPUT(change_file_sorting, context, view, cmp_array);
 
         HANDLE_INPUT(view_dotfiles, context, view); 
 
@@ -130,4 +131,13 @@ void handle_key_presses(ALL_ARGS) {
         if (IsKeyUp(key_key_scroll_down) && IsKeyUp(key_key_scroll_up))
             input->scroll_frames_count = 0;
     }
+}
+
+void mouse_input_callback(const void *inputs_ptr, Rectangle rect, int ix) {
+    inputs_t *input = (inputs_t*)inputs_ptr;
+
+    Vector2 mouse_position = GetMousePosition();
+
+    if (CheckCollisionPointRec(mouse_position, rect))
+        input->mouse_ix = ix;
 }

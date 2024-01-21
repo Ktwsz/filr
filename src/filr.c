@@ -7,6 +7,7 @@ cstr CSTR_DASH = { .str = "/", .size = 1 };
 
 void filr_file_array_append(filr_context* context, filr_file* new_elem) {
     context->size++;
+    if (!new_elem->is_dotfile) context->no_dotfiles_size++;
 
     if (context->files == NULL) {
         context->files = malloc(context->capacity * sizeof(filr_file));
@@ -86,9 +87,9 @@ void filr_init_cmp_array(filr_cmp_array *array) {
     array->array[0] = filr_file_comparator_basic;
     array->array[1] = filr_file_comparator_size;
     array->array[2] = filr_file_comparator_size_inv;
-    array->array[3] = file_file_comparator_edit_date;
-    array->array[4] = file_file_comparator_extension;
-    array->array[5] = file_file_comparator_alphabetic;
+    array->array[3] = filr_file_comparator_edit_date;
+    array->array[4] = filr_file_comparator_extension;
+    array->array[5] = filr_file_comparator_alphabetic;
 }
 
 void filr_free_context(filr_context *context) {
@@ -199,7 +200,7 @@ int filr_file_comparator_size_inv(const void *p1, const void *p2) {
 
 }
 
-int file_file_comparator_edit_date(const void *p1, const void *p2) {
+int filr_file_comparator_edit_date(const void *p1, const void *p2) {
     filr_file f1 = *((filr_file*)p1);
     filr_file f2 = *((filr_file*)p2);
 
@@ -218,7 +219,7 @@ int file_file_comparator_edit_date(const void *p1, const void *p2) {
     return d1.minute - d2.minute;
 }
 
-int file_file_comparator_extension(const void *p1, const void *p2) {
+int filr_file_comparator_extension(const void *p1, const void *p2) {
     filr_file f1 = *((filr_file*)p1);
     filr_file f2 = *((filr_file*)p2);
 
@@ -229,9 +230,17 @@ int file_file_comparator_extension(const void *p1, const void *p2) {
     return strcmp(ext1.str, ext2.str);
 }
 
-int file_file_comparator_alphabetic(const void *p1, const void *p2) {
+int filr_file_comparator_alphabetic(const void *p1, const void *p2) {
     filr_file f1 = *((filr_file*)p1);
     filr_file f2 = *((filr_file*)p2);
     
     return strcmp(f1.name.str, f2.name.str);
+}
+
+size_t filr_count_dotfiles(filr_context *context, size_t ix) {
+    int ctr = 0;
+    for (size_t i = 0; i < ix; ++i) {
+        if (context->files[i].is_dotfile) ctr++;
+    }
+    return ctr;
 }

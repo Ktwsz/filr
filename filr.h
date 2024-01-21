@@ -27,6 +27,7 @@ typedef struct {
     size_t capacity;
     cstr directory;
     size_t file_index;
+    size_t no_dotfiles_size;
 } filr_context;
 
 typedef int(*filr_comparator)(const void *, const void *);
@@ -65,10 +66,12 @@ int filr_file_comparator_size(const void *p1, const void *p2);
 
 int filr_file_comparator_size_inv(const void *p1, const void *p2);
 
-int file_file_comparator_edit_date(const void *p1, const void *p2);
+int filr_file_comparator_edit_date(const void *p1, const void *p2);
 
-int file_file_comparator_extension(const void *p1, const void *p2);
+int filr_file_comparator_extension(const void *p1, const void *p2);
 
-int file_file_comparator_alphabetic(const void *p1, const void *p2);
+int filr_file_comparator_alphabetic(const void *p1, const void *p2);
+
+size_t filr_count_dotfiles(filr_context *context, size_t ix);
 
 #endif

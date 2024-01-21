@@ -1,6 +1,7 @@
 #ifndef INPUTS_H
 #define INPUTS_H
 
+#include "lib/raylib.h"
 #include "view.h"
 #include "filr.h"
 
@@ -25,5 +26,7 @@ typedef struct {
 void inputs_init(inputs_t *input);
 
 void handle_key_presses(filr_context *context, view_t *view, inputs_t *input, filr_cmp_array *cmp_array);
+
+void mouse_input_callback(const void *inputs_ptr, Rectangle rect, int ix);
 
 #endif
