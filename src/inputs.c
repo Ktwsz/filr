@@ -26,7 +26,11 @@ void inputs_init(inputs_t *input) {
 #define key_view_dotfiles KEY_PERIOD
 #define key_create_start KEY_T
 #define key_create_confirm KEY_ENTER
-#define key_create_cancel KEY_LEFT_SHIFT
+#define key_delete_file KEY_D
+#define key_rename_start KEY_R
+#define key_rename_confirm KEY_ENTER
+#define key_input_mode_cancel KEY_LEFT_SHIFT
+#define key_input_mode_delete_last KEY_BACKSPACE
 
 #define HANDLE_INPUT(input, ...) if (IsKeyPressed(key_##input)) input(__VA_ARGS__)
 #define HANDLE_INPUT_MOUSE(input, ...) if (IsMouseButtonPressed(key_##input)) input(__VA_ARGS__)
@@ -110,33 +114,66 @@ void view_dotfiles(BASE_ARGS) {
         move_one_down(context, view);
 }
 
-void create_start(INPUTS_ARGS) {
-    input->mode = INPUTS_CREATE;
+void input_mode_start(INPUTS_ARGS, mode_enum mode) {
+    input->mode = mode;
     view_show_input(view);
+}
+
+void create_start(INPUTS_ARGS) {
+    input_mode_start(context, view, input, INPUTS_CREATE);
+}
+
+void input_mode_cancel(INPUTS_ARGS) {
+    input->mode = INPUTS_NORMAL;
+    view_hide_input(view);
+    cstr_init(&input->input_str, 0);
 }
 
 void create_confirm(INPUTS_ARGS) {
     filr_create_file(context, input->input_str);//TODO: add centering camera on creating file
+    filr_reset(context);
     filr_load_directory(context);
-    input->mode = INPUTS_NORMAL;
-    view_hide_input(view);
-    cstr_init(&input->input_str, 0);
+
+    input_mode_cancel(context, view, input);
 }
 
-void create_cancel(INPUTS_ARGS) {
-    input->mode = INPUTS_NORMAL;
-    view_hide_input(view);
-    cstr_init(&input->input_str, 0);
+void input_mode_delete_last(view_t *view, inputs_t *input) {
+    cstr_pop(&input->input_str);
+    cstr_pop(&view->input_str);
 }
 
-void inputs_parse_key_queue(view_t *view, inputs_t *input) {
-    int key_pressed = GetKeyPressed();
+void delete_file(filr_context *context) {
+    filr_delete_file(context);
+    filr_reset(context);
+    filr_load_directory(context);
+}
+
+
+void input_mode_parse_key_queue(view_t *view, inputs_t *input) {
+    int key_pressed = GetCharPressed();
     while(key_pressed) {
-        cstr_concat_single(&input->input_str, 'a' + key_pressed);
-        key_pressed = GetKeyPressed();
+        if (key_pressed >= 32 && key_pressed <= 125)
+            cstr_concat_single(&input->input_str, (char)key_pressed);
+
+        key_pressed = GetCharPressed();
     }
 
     cstr_copy(&view->input_str, input->input_str);
+}
+
+void rename_start(INPUTS_ARGS) {
+    input_mode_start(context, view, input, INPUTS_RENAME);
+
+    cstr_copy(&view->input_str, filr_get_name(context, context->file_index));
+    cstr_copy(&input->input_str, filr_get_name(context, context->file_index));
+}
+
+void rename_confirm(INPUTS_ARGS) {
+    filr_rename_file(context, input->input_str);//TODO: add centering camera on creating file
+    filr_reset(context);
+    filr_load_directory(context);
+
+    input_mode_cancel(context, view, input);
 }
 
 void handle_key_presses(ALL_ARGS) {
@@ -156,6 +193,10 @@ void handle_key_presses(ALL_ARGS) {
 
             HANDLE_INPUT(create_start, context, view, input);
 
+            HANDLE_INPUT(delete_file, context);
+
+            HANDLE_INPUT(rename_start, context, view, input);
+
             HANDLE_INPUT_MOUSE(mouse_left_click, context, view, input);
 
             HANDLE_INPUT_MOUSE_SCROLL(context, view, input);
@@ -170,8 +211,16 @@ void handle_key_presses(ALL_ARGS) {
 
         case INPUTS_CREATE:
             HANDLE_INPUT(create_confirm, context, view, input);
-            HANDLE_INPUT(create_cancel, context, view, input);
-            inputs_parse_key_queue(view, input);
+            HANDLE_INPUT(input_mode_cancel, context, view, input);
+            HANDLE_INPUT(input_mode_delete_last, view, input);
+            input_mode_parse_key_queue(view, input);
+            break;
+
+        case INPUTS_RENAME:
+            HANDLE_INPUT(rename_confirm, context, view, input);
+            HANDLE_INPUT(input_mode_cancel, context, view, input);
+            HANDLE_INPUT(input_mode_delete_last, view, input);
+            input_mode_parse_key_queue(view, input);
             break;
     }
 }

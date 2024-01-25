@@ -12,7 +12,8 @@
 
 typedef enum {
     INPUTS_NORMAL,
-    INPUTS_CREATE
+    INPUTS_CREATE,
+    INPUTS_RENAME
 } mode_enum;
 
 typedef struct {

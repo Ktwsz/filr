@@ -50,6 +50,12 @@ void filr_free_context(filr_context *context);
 
 void filr_create_file(filr_context  *context, cstr file_name);
 
+void filr_rename_file(filr_context  *context, cstr file_name);
+
+void filr_delete_file(filr_context *context);
+
+void filr_reset(filr_context *context);
+
 void filr_move_index(filr_context *context, int di, bool skip_dotfiles);
 
 void filr_reset_index(filr_context *context);
@@ -58,7 +64,7 @@ bool filr_action(filr_context *context);
 
 void filr_goto_directory(filr_context *context);
 
-cstr filr_get_name_cstr(filr_context *context, size_t ix);
+cstr filr_get_name(filr_context *context, size_t ix);
 
 void filr_print_array(filr_context *context);
 

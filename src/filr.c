@@ -1,7 +1,9 @@
 #include "../filr.h"
 #include <string.h>
 
-#include "windows.h"
+#include <windows.h>
+
+#define assert_return(expr) if (!(expr)) return
 
 cstr CSTR_DASH = { .str = "/", .size = 1 };
 
@@ -100,13 +102,41 @@ void filr_create_file(filr_context  *context, cstr file_name) {
     cstr file_path;
     cstr_init(&file_path, 0);
     cstr_concat(&file_path, 3, context->directory, CSTR_DASH, file_name);
-    HANDLE _ = CreateFile(file_path.str,
+    HANDLE handle = CreateFile(file_path.str,
                           GENERIC_WRITE,
                           0,
                           0,
                           CREATE_NEW,
                           FILE_ATTRIBUTE_NORMAL,
                           0);
+    CloseHandle(handle);
+}
+
+void filr_rename_file(filr_context  *context, cstr new_file_name) {
+    assert_return(context->file_index > 1);
+
+    cstr old_file_name = filr_get_name(context, context->file_index);
+    cstr old_file_path;
+    cstr_init(&old_file_path, 0);
+    cstr_concat(&old_file_path, 3, context->directory, CSTR_DASH, old_file_name);
+
+    cstr new_file_path;
+    cstr_init(&new_file_path, 0);
+    cstr_concat(&new_file_path, 3, context->directory, CSTR_DASH, new_file_name);
+
+    bool _ = MoveFile(old_file_path.str,
+                        new_file_path.str);
+}
+
+void filr_delete_file(filr_context *context) {
+    assert_return(context->file_index > 1);
+
+    cstr file = filr_get_name(context, context->file_index);
+    cstr file_path;
+    cstr_init(&file_path, 0);
+    cstr_concat(&file_path, 3, context->directory, CSTR_DASH, file);
+
+    bool _ = DeleteFile(file_path.str);
 }
 
 size_t filr_find_next_index(filr_context *context, int range, int step) {
@@ -116,6 +146,10 @@ size_t filr_find_next_index(filr_context *context, int range, int step) {
     }
 
     return ix;
+}
+
+void filr_reset(filr_context *context) {
+    context->size = 0;
 }
 
 void filr_move_index(filr_context *context, int di, bool skip_dotfiles) {
@@ -155,8 +189,7 @@ bool filr_action(filr_context *context) {
 }
 
 void filr_goto_directory(filr_context* context) {
-    size_t ix = context->file_index;
-    cstr goto_directory = context->files[ix].name;
+    cstr goto_directory = filr_get_name(context, context->file_index);
 
     if (strcmp(goto_directory.str, "..") == 0) {
         cstr tmp;
@@ -170,11 +203,11 @@ void filr_goto_directory(filr_context* context) {
         cstr_copy(&(context->directory), tmp);
     }
 
-    context->size = 0;
+    filr_reset(context);
     filr_load_directory(context);
 }
 
-cstr filr_get_name_cstr(filr_context *context, size_t ix) {
+cstr filr_get_name(filr_context *context, size_t ix) {
     return context->files[ix].name;
 }
 
@@ -183,7 +216,7 @@ void filr_print_array(filr_context *context) {
     printf("size: %d\n", context->size);
     for (size_t i = 0; i < context->size; ++i) {
         printf("i: %d str size: %d ", i, context->files[i].name.size);
-        printf("%s\n", filr_get_name_cstr(context, i).str);
+        printf("%s\n", filr_get_name(context, i).str);
     }
 
 }

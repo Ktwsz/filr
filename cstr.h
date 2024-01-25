@@ -21,6 +21,8 @@ void cstr_concat(cstr *dst, int count, ...);
 
 void cstr_concat_single(cstr *dst, const char c);
 
+void cstr_pop(cstr *dst);
+
 void cstr_strip_directory(cstr *dst, cstr src);
 
 void cstr_cap(cstr *dst, cstr src, int len);
