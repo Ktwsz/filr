@@ -4,8 +4,6 @@
 #include "view.h"
 #include "inputs.h"
 
-#include <math.h>
-
 #define INIT_WINDOW_HEIGHT 800
 #define INIT_WINDOW_WIDTH 800
 
