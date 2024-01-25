@@ -45,7 +45,7 @@ void filr_parse_file(filr_file *dst, WIN32_FIND_DATA src) {
 }
 
 
-bool load_directory(filr_context *context) {
+bool filr_load_directory(filr_context *context) {
     WIN32_FIND_DATA file;
     HANDLE hFind = NULL;
     char *dir = context->directory.str;
@@ -76,7 +76,7 @@ void filr_init_context(filr_context *context) {
     printf("%s\n", HOME);
     cstr_init_name(&(context->directory), HOME);
     
-    load_directory(context);
+    filr_load_directory(context);
 }
 
 
@@ -94,6 +94,19 @@ void filr_init_cmp_array(filr_cmp_array *array) {
 
 void filr_free_context(filr_context *context) {
     free(context->files);
+}
+
+void filr_create_file(filr_context  *context, cstr file_name) {
+    cstr file_path;
+    cstr_init(&file_path, 0);
+    cstr_concat(&file_path, 3, context->directory, CSTR_DASH, file_name);
+    HANDLE _ = CreateFile(file_path.str,
+                          GENERIC_WRITE,
+                          0,
+                          0,
+                          CREATE_NEW,
+                          FILE_ATTRIBUTE_NORMAL,
+                          0);
 }
 
 size_t filr_find_next_index(filr_context *context, int range, int step) {
@@ -158,7 +171,7 @@ void filr_goto_directory(filr_context* context) {
     }
 
     context->size = 0;
-    load_directory(context);
+    filr_load_directory(context);
 }
 
 cstr filr_get_name_cstr(filr_context *context, size_t ix) {

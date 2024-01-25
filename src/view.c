@@ -35,19 +35,47 @@ Texture load_svg(const char *src, Vector2 size) {
     return t;
 }
 
+void view_set_size_window(view_window *window, int window_width, int window_height, bool show_input, view_window *input) {
+    window->offset = (Vector2) {.x = 0, .y = 40};
+    window->camera.width = window_width - window->offset.x;
+    window->camera.height = window_height - window->offset.y;
+    window->text_size = (Vector2) {.x = window->camera.width, .y = 30};
+
+    if (show_input)
+        window->camera.height -= input->camera.height;
+}
+
+void view_set_size_header(view_window *header, int window_width, int window_height) {
+    header->offset = (Vector2) {.x = 0, .y = 0};
+    header->camera.width = window_width;
+    header->camera.height = 30;
+    header->text_size = (Vector2) {.x = header->camera.width, .y = header->camera.height};
+}
+
+void view_set_size_input(view_window *input, int window_width, int window_height) {
+    input->offset = (Vector2) {.x = 0, .y = window_height - 30};
+    input->camera.width = window_width;
+    input->camera.height = 30;
+    input->text_size = (Vector2) {.x = input->camera.width, .y = input->camera.height};
+}
+
 void view_init(view_t *view, int window_width, int window_height) {
     view->size = (Rectangle) {.x = 0, .y = 0, .width = window_width, .height = window_height};
     view->show_input = false;
+    cstr_init(&view->input_str, 0);
 
-    view->header.offset = (Vector2) {.x = 0, .y = 0};
-    view->header.camera = (Rectangle) {.x = 0, .y = 0, .width = window_width, .height = 30};
-    view->header.text_size = (Vector2) {.x = view->header.camera.width, .y = view->header.camera.height};
+    view->header = (view_window){0};
+    view->header.camera = (Rectangle) {.x = 0, .y = 0};
+    view_set_size_header(&view->header, window_width, window_height);
 
-    view->window.offset = (Vector2) {.x = 0, .y = 40};
-    view->window.camera = (Rectangle) {.x = 0, .y = 0, .width = window_width - view->window.offset.x, .height = window_height - view->window.offset.y};
-
-    view->window.text_size = (Vector2) {.x = view->window.camera.width, .y = 30};
+    view->window = (view_window){0};
+    view->window.camera = (Rectangle) {.x = 0, .y = 0};
     view->window.hide_dotfiles = true;
+    view_set_size_window(&view->window, window_width, window_height, view->show_input, &view->input);
+
+    view->input = (view_window){0};
+    view->input.camera = (Rectangle) {.x = 0, .y = 0};
+    view_set_size_input(&view->input, window_width, window_height);
 
     view->theme.font = LoadFontEx(FONT_DIR, 32, 0, 250);
 
@@ -152,6 +180,17 @@ void get_row_str(cstr *row, filr_file file, int name_cap) {
                 date);
 }
 
+void view_show_input(view_t *view) {
+    view->show_input = true;
+    view->window.camera.height -= view->input.camera.height;
+}
+
+void view_hide_input(view_t *view) {
+    view->show_input = false;
+    cstr_init(&view->input_str, 0);
+    view->window.camera.height += view->input.camera.height;
+}
+
 
 void view_directory(filr_context *context, view_window *window, view_theme *theme, const void *inputs_ptr, mouse_input_callback_t mouse_input_callback) {
     float ix_f = ceil(window->camera.y / window->text_size.y);
@@ -220,7 +259,7 @@ void view_view(filr_context *context, view_t *view, const void *inputs_ptr, mous
     view_directory(context, &view->window, &view->theme, inputs_ptr, mouse_input_callback);
 
     if (view->show_input)
-        view_input(context, &view->input, &view->theme);
+        view_input(context, &view->input, &view->theme, view->input_str);
 }
 
 void view_header(filr_context *context, view_window *header, view_theme *theme) {
@@ -239,7 +278,20 @@ void view_header(filr_context *context, view_window *header, view_theme *theme) 
                theme->highlight);
 }
 
-void view_input(filr_context *context, view_window *window, view_theme *theme) {}
+void view_input(filr_context *context, view_window *window, view_theme *theme, cstr input_str) {
+    Rectangle input_rect = {.x = window->offset.x,
+                            .y = window->offset.y,
+                            .width = window->camera.width,
+                            .height = window->camera.height};
+
+    DrawRectangleRec(input_rect, theme->passive);
+    DrawTextEx(theme->font,
+               input_str.str,
+               (Vector2){input_rect.x, input_rect.y},
+               (float)theme->font.baseSize,
+               2,
+               theme->highlight);
+}
 
 void view_center_camera(filr_context *context, view_t *view) {
     size_t ix = context->file_index;
@@ -275,13 +327,11 @@ void view_handle_resize(filr_context *context, view_t *view) {
     view->size.width = window_width;
     view->size.height = window_height;
 
-    view->header.camera.width = window_width - view->header.offset.x;
-    view->header.camera.height = window_height - view->header.offset.y;
-    view->header.text_size.x = view->header.camera.width;
+    view_set_size_header(&view->header, window_width, window_height);
 
-    view->window.camera.width = window_width - view->window.offset.x;
-    view->window.camera.height = window_height - view->window.offset.y;
-    view->window.text_size.x = view->window.camera.width;
+    view_set_size_window(&view->window, window_width, window_height, view->show_input, &view->input);
+
+    view_set_size_input(&view->input, window_width, window_height);
 
     view_center_camera(context, view);
 }

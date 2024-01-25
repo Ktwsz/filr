@@ -51,6 +51,12 @@ void cstr_concat(cstr*dst, int count, ...) {
     va_end(ap);
 }
 
+void cstr_concat_single(cstr *dst, const char c) {
+    dst->size++;
+    dst->str[dst->size-1] = c;
+    dst->str[dst->size] = '\0';
+}
+
 void cstr_strip_directory(cstr *dst, cstr src) {
     size_t end_ix = src.size-1;
     

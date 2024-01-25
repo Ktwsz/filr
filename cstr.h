@@ -17,7 +17,9 @@ void cstr_init_name(cstr *dst, const char *src);
 
 void cstr_copy(cstr *dst, cstr src);
 
-void cstr_concat(cstr*dst, int count, ...);
+void cstr_concat(cstr *dst, int count, ...);
+
+void cstr_concat_single(cstr *dst, const char c);
 
 void cstr_strip_directory(cstr *dst, cstr src);
 

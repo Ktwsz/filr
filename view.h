@@ -24,6 +24,7 @@ typedef struct {
     view_theme theme;
     Rectangle size;
     bool show_input;
+    cstr input_str;
 } view_t;
 
 typedef void(*mouse_input_callback_t)(const void *, Rectangle, int);
@@ -34,7 +35,11 @@ void view_directory(filr_context *context, view_window *window, view_theme *them
 
 void view_header(filr_context *context, view_window *window, view_theme *theme);
 
-void view_input(filr_context *context, view_window *window, view_theme *theme);
+void view_show_input(view_t *view);
+
+void view_hide_input(view_t *view);
+
+void view_input(filr_context *context, view_window *window, view_theme *theme, cstr input_str);
 
 void view_center_camera(filr_context *context, view_t *view);
 

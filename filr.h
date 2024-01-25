@@ -40,13 +40,15 @@ typedef struct {
 
 void filr_file_array_append(filr_context* context, filr_file* new_elem);
 
-bool load_directory(filr_context *context);
+bool filr_load_directory(filr_context *context);
 
 void filr_init_context(filr_context *context);
 
 void filr_init_cmp_array(filr_cmp_array *array);
 
 void filr_free_context(filr_context *context);
+
+void filr_create_file(filr_context  *context, cstr file_name);
 
 void filr_move_index(filr_context *context, int di, bool skip_dotfiles);
 

@@ -8,6 +8,7 @@ void inputs_init(inputs_t *input) {
     input->scroll_pos = 0;
     input->mode = INPUTS_NORMAL;    
     input->scroll_frames_count = 0;
+    cstr_init(&input->input_str, 0);
 }
 
 #define BASE_ARGS filr_context *context, view_t *view
@@ -23,6 +24,9 @@ void inputs_init(inputs_t *input) {
 #define key_key_scroll_up KEY_UP
 #define key_change_file_sorting KEY_S
 #define key_view_dotfiles KEY_PERIOD
+#define key_create_start KEY_T
+#define key_create_confirm KEY_ENTER
+#define key_create_cancel KEY_LEFT_SHIFT
 
 #define HANDLE_INPUT(input, ...) if (IsKeyPressed(key_##input)) input(__VA_ARGS__)
 #define HANDLE_INPUT_MOUSE(input, ...) if (IsMouseButtonPressed(key_##input)) input(__VA_ARGS__)
@@ -106,30 +110,69 @@ void view_dotfiles(BASE_ARGS) {
         move_one_down(context, view);
 }
 
+void create_start(INPUTS_ARGS) {
+    input->mode = INPUTS_CREATE;
+    view_show_input(view);
+}
+
+void create_confirm(INPUTS_ARGS) {
+    filr_create_file(context, input->input_str);//TODO: add centering camera on creating file
+    filr_load_directory(context);
+    input->mode = INPUTS_NORMAL;
+    view_hide_input(view);
+    cstr_init(&input->input_str, 0);
+}
+
+void create_cancel(INPUTS_ARGS) {
+    input->mode = INPUTS_NORMAL;
+    view_hide_input(view);
+    cstr_init(&input->input_str, 0);
+}
+
+void inputs_parse_key_queue(view_t *view, inputs_t *input) {
+    int key_pressed = GetKeyPressed();
+    while(key_pressed) {
+        cstr_concat_single(&input->input_str, 'a' + key_pressed);
+        key_pressed = GetKeyPressed();
+    }
+
+    cstr_copy(&view->input_str, input->input_str);
+}
+
 void handle_key_presses(ALL_ARGS) {
-    if (input->mode == INPUTS_NORMAL) {
-        HANDLE_INPUT(center_camera, context, view);
+    switch (input->mode) {
+        case INPUTS_NORMAL:
+            HANDLE_INPUT(center_camera, context, view);
 
-        HANDLE_INPUT(move_one_down, context, view);
-        
-        HANDLE_INPUT(move_one_up, context, view);
+            HANDLE_INPUT(move_one_down, context, view);
 
-        HANDLE_INPUT(file_action, context, view);
+            HANDLE_INPUT(move_one_up, context, view);
 
-        HANDLE_INPUT(change_file_sorting, context, view, cmp_array);
+            HANDLE_INPUT(file_action, context, view);
 
-        HANDLE_INPUT(view_dotfiles, context, view); 
+            HANDLE_INPUT(change_file_sorting, context, view, cmp_array);
 
-        HANDLE_INPUT_MOUSE(mouse_left_click, context, view, input);
+            HANDLE_INPUT(view_dotfiles, context, view);
 
-        HANDLE_INPUT_MOUSE_SCROLL(context, view, input);
+            HANDLE_INPUT(create_start, context, view, input);
 
-        HANDLE_INPUT_DOWN(key_scroll_down, context, view, input);
+            HANDLE_INPUT_MOUSE(mouse_left_click, context, view, input);
 
-        HANDLE_INPUT_DOWN(key_scroll_up, context, view, input);
+            HANDLE_INPUT_MOUSE_SCROLL(context, view, input);
 
-        if (IsKeyUp(key_key_scroll_down) && IsKeyUp(key_key_scroll_up))
-            input->scroll_frames_count = 0;
+            HANDLE_INPUT_DOWN(key_scroll_down, context, view, input);
+
+            HANDLE_INPUT_DOWN(key_scroll_up, context, view, input);
+
+            if (IsKeyUp(key_key_scroll_down) && IsKeyUp(key_key_scroll_up))
+                input->scroll_frames_count = 0;
+            break;
+
+        case INPUTS_CREATE:
+            HANDLE_INPUT(create_confirm, context, view, input);
+            HANDLE_INPUT(create_cancel, context, view, input);
+            inputs_parse_key_queue(view, input);
+            break;
     }
 }
 

@@ -11,8 +11,8 @@
 #define SCROLL_FRAME_THRESHOLD 10
 
 typedef enum {
-    INPUTS_NORMAL, 
-    INPUTS_INPUT
+    INPUTS_NORMAL,
+    INPUTS_CREATE
 } mode_enum;
 
 typedef struct {
@@ -20,6 +20,7 @@ typedef struct {
     float scroll_pos;
     mode_enum mode;
     int scroll_frames_count;
+    cstr input_str;
 } inputs_t;
 
 
