@@ -58,13 +58,15 @@ void filr_reset(filr_context *context);
 
 void filr_move_index(filr_context *context, int di, bool skip_dotfiles);
 
+void filr_move_index_filename(filr_context  *context, cstr filename);
+
 void filr_reset_index(filr_context *context);
 
 bool filr_action(filr_context *context);
 
 void filr_goto_directory(filr_context *context);
 
-cstr filr_get_name(filr_context *context, size_t ix);
+cstr *filr_get_name(filr_context *context, size_t ix);
 
 void filr_print_array(filr_context *context);
 

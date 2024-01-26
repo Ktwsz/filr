@@ -1,5 +1,6 @@
 #include "../filr.h"
 #include <string.h>
+#include <assert.h>
 
 #include <windows.h>
 
@@ -17,7 +18,8 @@ void filr_file_array_append(filr_context* context, filr_file* new_elem) {
 
     if (context->size > context->capacity) {
         context->capacity *= 2;
-        realloc(context->files, context->capacity * sizeof(filr_file));
+        void *result = realloc(context->files, context->capacity * sizeof(filr_file));
+        assert(result != NULL);
     }
 
     memcpy(context->files + (context->size - 1), new_elem, sizeof(filr_file));
@@ -43,7 +45,7 @@ void filr_parse_file(filr_file *dst, WIN32_FIND_DATA src) {
     dst->size = src.nFileSizeHigh * (MAXDWORD + 1) + src.nFileSizeLow;
     filr_parse_date(&(dst->last_edit_date), src.ftLastWriteTime);
 
-    dst->is_dotfile = strcmp(dst->name.str, "..") && strcmp(dst->name.str, ".") && dst->name.str[0] == '.';
+    dst->is_dotfile = strcmp(dst->name.str, "..") != 0 && strcmp(dst->name.str, ".") != 0 && dst->name.str[0] == '.';
 }
 
 
@@ -115,7 +117,7 @@ void filr_create_file(filr_context  *context, cstr file_name) {
 void filr_rename_file(filr_context  *context, cstr new_file_name) {
     assert_return(context->file_index > 1);
 
-    cstr old_file_name = filr_get_name(context, context->file_index);
+    cstr old_file_name = *filr_get_name(context, context->file_index);
     cstr old_file_path;
     cstr_init(&old_file_path, 0);
     cstr_concat(&old_file_path, 3, context->directory, CSTR_DASH, old_file_name);
@@ -131,7 +133,7 @@ void filr_rename_file(filr_context  *context, cstr new_file_name) {
 void filr_delete_file(filr_context *context) {
     assert_return(context->file_index > 1);
 
-    cstr file = filr_get_name(context, context->file_index);
+    cstr file = *filr_get_name(context, context->file_index);
     cstr file_path;
     cstr_init(&file_path, 0);
     cstr_concat(&file_path, 3, context->directory, CSTR_DASH, file);
@@ -164,6 +166,15 @@ void filr_move_index(filr_context *context, int di, bool skip_dotfiles) {
     }
 }
 
+void filr_move_index_filename(filr_context  *context, cstr filename) {
+    for (size_t i = 0; i < context->size; ++i) {
+        if (cstr_cmp(filr_get_name(context, i), &filename) == 0) {
+            context->file_index = i;
+            return;
+        }
+    }
+}
+
 void filr_reset_index(filr_context *context) {
     context->file_index = 0;
 }
@@ -189,7 +200,7 @@ bool filr_action(filr_context *context) {
 }
 
 void filr_goto_directory(filr_context* context) {
-    cstr goto_directory = filr_get_name(context, context->file_index);
+    cstr goto_directory = *filr_get_name(context, context->file_index);
 
     if (strcmp(goto_directory.str, "..") == 0) {
         cstr tmp;
@@ -207,16 +218,16 @@ void filr_goto_directory(filr_context* context) {
     filr_load_directory(context);
 }
 
-cstr filr_get_name(filr_context *context, size_t ix) {
-    return context->files[ix].name;
+cstr *filr_get_name(filr_context *context, size_t ix) {
+    return &context->files[ix].name;
 }
 
 
 void filr_print_array(filr_context *context) {
-    printf("size: %d\n", context->size);
+    printf("size: %zu\n", context->size);
     for (size_t i = 0; i < context->size; ++i) {
-        printf("i: %d str size: %d ", i, context->files[i].name.size);
-        printf("%s\n", filr_get_name(context, i).str);
+        printf("i: %zu str size: %zu ", i, context->files[i].name.size);
+        printf("%s\n", filr_get_name(context, i)->str);
     }
 
 }
@@ -226,7 +237,7 @@ int filr_file_comparator_basic(const void *p1, const void *p2) {
     filr_file f2 = *((filr_file*)p2);
 
     if (f1.is_directory == f2.is_directory)
-        return strcmp(f1.name.str, f2.name.str);
+        return cstr_cmp(&f1.name, &f2.name);
 
     if (f1.is_directory) return 1;
     return -1;
@@ -236,7 +247,8 @@ int filr_file_comparator_size(const void *p1, const void *p2) {
     filr_file f1 = *((filr_file*)p1);
     filr_file f2 = *((filr_file*)p2);
     
-    return f1.size - f2.size;
+    return (f1.size == f2.size) ? 0 :
+            (f1.size < f2.size) ? -1 : 1;
 }
 
 int filr_file_comparator_size_inv(const void *p1, const void *p2) {
@@ -271,14 +283,14 @@ int filr_file_comparator_extension(const void *p1, const void *p2) {
     cstr_strip_extension(&ext1, f1.name);
     cstr_strip_extension(&ext2, f2.name);
 
-    return strcmp(ext1.str, ext2.str);
+    return cstr_cmp(&ext1, &ext2);
 }
 
 int filr_file_comparator_alphabetic(const void *p1, const void *p2) {
     filr_file f1 = *((filr_file*)p1);
     filr_file f2 = *((filr_file*)p2);
     
-    return strcmp(f1.name.str, f2.name.str);
+    return cstr_cmp(&f1.name, &f2.name);
 }
 
 size_t filr_count_dotfiles(filr_context *context, size_t ix) {

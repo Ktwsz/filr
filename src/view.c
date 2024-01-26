@@ -1,5 +1,4 @@
 #include "../view.h"
-#include "../cstr.h"
 
 #include <math.h>
 
@@ -29,16 +28,16 @@
 cstr CSTR_SPACE = { .str = " ", .size = 1 };
 
 Texture load_svg(const char *src, Vector2 size) {
-    Image img = LoadImageSvg(src, size.y, size.y);
+    Image img = LoadImageSvg(src, (int)size.y, (int)size.y);
     Texture t = LoadTextureFromImage(img);
     UnloadImage(img);
     return t;
 }
 
 void view_set_size_window(view_window *window, int window_width, int window_height, bool show_input, view_window *input) {
-    window->offset = (Vector2) {.x = 0, .y = 40};
-    window->camera.width = window_width - window->offset.x;
-    window->camera.height = window_height - window->offset.y;
+    window->offset = (Vector2) {.x = 0.0f, .y = 40.0f};
+    window->camera.width = (float)window_width - window->offset.x;
+    window->camera.height = (float)window_height - window->offset.y;
     window->text_size = (Vector2) {.x = window->camera.width, .y = 30};
 
     if (show_input)
@@ -46,35 +45,35 @@ void view_set_size_window(view_window *window, int window_width, int window_heig
 }
 
 void view_set_size_header(view_window *header, int window_width, int window_height) {
-    header->offset = (Vector2) {.x = 0, .y = 0};
-    header->camera.width = window_width;
+    header->offset = (Vector2) {.x = 0.0f, .y = 0.0f};
+    header->camera.width = (float)window_width;
     header->camera.height = 30;
     header->text_size = (Vector2) {.x = header->camera.width, .y = header->camera.height};
 }
 
 void view_set_size_input(view_window *input, int window_width, int window_height) {
-    input->offset = (Vector2) {.x = 0, .y = window_height - 30};
-    input->camera.width = window_width;
-    input->camera.height = 30;
+    input->offset = (Vector2) {.x = 0.0f, .y = (float)window_height - 30.0f};
+    input->camera.width = (float)window_width;
+    input->camera.height = 30.0f;
     input->text_size = (Vector2) {.x = input->camera.width, .y = input->camera.height};
 }
 
 void view_init(view_t *view, int window_width, int window_height) {
-    view->size = (Rectangle) {.x = 0, .y = 0, .width = window_width, .height = window_height};
+    view->size = (Rectangle) {.x = 0.0f, .y = 0.0f, .width = (float)window_width, .height = (float)window_height};
     view->show_input = false;
     cstr_init(&view->input_str, 0);
 
     view->header = (view_window){0};
-    view->header.camera = (Rectangle) {.x = 0, .y = 0};
+    view->header.camera = (Rectangle) {.x = 0.0f, .y = 0.0f};
     view_set_size_header(&view->header, window_width, window_height);
 
     view->window = (view_window){0};
-    view->window.camera = (Rectangle) {.x = 0, .y = 0};
+    view->window.camera = (Rectangle) {.x = 0.0f, .y = 0.0f};
     view->window.hide_dotfiles = true;
     view_set_size_window(&view->window, window_width, window_height, view->show_input, &view->input);
 
     view->input = (view_window){0};
-    view->input.camera = (Rectangle) {.x = 0, .y = 0};
+    view->input.camera = (Rectangle) {.x = 0.0f, .y = 0.0f};
     view_set_size_input(&view->input, window_width, window_height);
 
     view->theme.font = LoadFontEx(FONT_DIR, 32, 0, 250);
@@ -104,8 +103,8 @@ void view_init(view_t *view, int window_width, int window_height) {
 void view_draw_background(view_t *view) {
     ClearBackground(view->theme.bg);
 
-    int bg_pos_x = (view->size.width - view->theme.bg_texture.width) / 2;
-    int bg_pos_y = (view->size.height - view->theme.bg_texture.height) / 2;
+    int bg_pos_x = ((int)view->size.width - view->theme.bg_texture.width) / 2;
+    int bg_pos_y = ((int)view->size.height - view->theme.bg_texture.height) / 2;
 
     DrawTexture(view->theme.bg_texture, bg_pos_x, bg_pos_y, RAYWHITE);
 }
@@ -114,8 +113,8 @@ int max(int a, int b) {
     return (a > b)? a : b;
 }
 
-Vector2 get_position(int ix, Vector2 text_size) {
-    return (Vector2){0, ix * text_size.y}; 
+Vector2 get_position(size_t ix, Vector2 text_size) {
+    return (Vector2){0, (float)ix * text_size.y};
 }
 
 Texture get_file_icon(view_theme *theme, filr_file file) {
@@ -193,7 +192,7 @@ void view_hide_input(view_t *view) {
 
 
 void view_directory(filr_context *context, view_window *window, view_theme *theme, const void *inputs_ptr, mouse_input_callback_t mouse_input_callback) {
-    float ix_f = ceil(window->camera.y / window->text_size.y);
+    float ix_f = ceilf(window->camera.y / window->text_size.y);
     int draw_ix = (int)ix_f;
     int file_ix = 0;
 

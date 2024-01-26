@@ -119,7 +119,7 @@ void input_mode_start(INPUTS_ARGS, mode_enum mode) {
     view_show_input(view);
 }
 
-void create_start(INPUTS_ARGS) {
+void create_start(INPUTS_ARGS) {//TODO: add directory
     input_mode_start(context, view, input, INPUTS_CREATE);
 }
 
@@ -130,9 +130,11 @@ void input_mode_cancel(INPUTS_ARGS) {
 }
 
 void create_confirm(INPUTS_ARGS) {
-    filr_create_file(context, input->input_str);//TODO: add centering camera on creating file
+    filr_create_file(context, input->input_str);
     filr_reset(context);
     filr_load_directory(context);
+    filr_move_index_filename(context, input->input_str);
+    view_center_camera(context, view);
 
     input_mode_cancel(context, view, input);
 }
@@ -142,7 +144,7 @@ void input_mode_delete_last(view_t *view, inputs_t *input) {
     cstr_pop(&view->input_str);
 }
 
-void delete_file(filr_context *context) {
+void delete_file(filr_context *context) {//TODO: delete directory
     filr_delete_file(context);
     filr_reset(context);
     filr_load_directory(context);
@@ -164,14 +166,16 @@ void input_mode_parse_key_queue(view_t *view, inputs_t *input) {
 void rename_start(INPUTS_ARGS) {
     input_mode_start(context, view, input, INPUTS_RENAME);
 
-    cstr_copy(&view->input_str, filr_get_name(context, context->file_index));
-    cstr_copy(&input->input_str, filr_get_name(context, context->file_index));
+    cstr_copy(&view->input_str, *filr_get_name(context, context->file_index));
+    cstr_copy(&input->input_str, *filr_get_name(context, context->file_index));
 }
 
 void rename_confirm(INPUTS_ARGS) {
-    filr_rename_file(context, input->input_str);//TODO: add centering camera on creating file
+    filr_rename_file(context, input->input_str);
     filr_reset(context);
     filr_load_directory(context);
+    filr_move_index_filename(context, input->input_str);
+    view_center_camera(context, view);
 
     input_mode_cancel(context, view, input);
 }

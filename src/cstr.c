@@ -19,6 +19,14 @@ void cstr_init_name(cstr *dst, const char *src) {
     dst->size = strlen(src);
 }
 
+int cstr_cmp(const void *a, const void *b) {
+    cstr val1 = *(cstr*)a;
+    cstr val2 = *(cstr*)b;
+
+    if (val1.size != val2.size) return (val1.size < val2.size) ? -1 : 1;
+    return strcmp(val1.str, val2.str);
+}
+
 void cstr_copy(cstr *dst, cstr src) {
     dst->size = src.size;
     memcpy(dst->str, src.str, (src.size + 1) * sizeof(char));
@@ -30,7 +38,7 @@ void cstr_concat(cstr*dst, int count, ...) {
     int i;
 
     // Find required length to store merged string
-    int len = 0; // room for NULL
+    size_t len = 0; // room for NULL
     va_start(ap, count);
     for(i = 0; i < count; i++) {
         cstr tmp = va_arg(ap, cstr);
@@ -40,7 +48,7 @@ void cstr_concat(cstr*dst, int count, ...) {
 
     // Allocate memory to concat strings
     cstr_init(dst, len);
-    int null_pos = 0;
+    size_t null_pos = 0;
 
     // Actually concatenate strings
     va_start(ap, count);
@@ -109,7 +117,7 @@ const char *parse_size_prefix(int pow) {
     }
 }
 
-void cstr_parse_file_size(cstr *dst, int file_size) {
+void cstr_parse_file_size(cstr *dst, size_t file_size) {
     cstr_init(dst, 6);
 
     if (file_size == 0) {
@@ -123,7 +131,7 @@ void cstr_parse_file_size(cstr *dst, int file_size) {
         file_size /= 1000;
     }
 
-    sprintf(dst->str, "%3d %s", file_size, parse_size_prefix(pow));
+    sprintf(dst->str, "%3zu %s", file_size, parse_size_prefix(pow));
 }
 
 void add_zero(char *s, int val) {
@@ -159,8 +167,8 @@ void cstr_parse_date(cstr *dst, us day, us month, us year, us hour, us minute) {
 }
 
 void cstr_strip_extension(cstr *dst, cstr src) {
-    int i;
-    for (i = src.size-1; i >= 0; --i) {
+    size_t i;
+    for (i = src.size-1; i > 0; --i) {
         if (src.str[i] == '.') break;
     }
 

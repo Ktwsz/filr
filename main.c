@@ -22,7 +22,7 @@ int main(void) {
 
     SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_RESIZABLE);
 
-    InitWindow(INIT_WINDOW_WIDTH, INIT_WINDOW_HEIGHT, "chuj");
+    InitWindow(INIT_WINDOW_WIDTH, INIT_WINDOW_HEIGHT, "filr");
 
     SetTargetFPS(30);
 
