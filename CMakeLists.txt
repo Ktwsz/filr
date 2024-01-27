@@ -12,6 +12,7 @@ add_executable(filr_explorer main.c
         src/inputs.c
         filr.h
         src/filr.c
+        result.h
 )
 
 target_link_directories(filr_explorer PUBLIC lib)

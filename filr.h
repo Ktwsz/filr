@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include "cstr.h"
+#include "result.h"
 
 #define INIT_ARRAY_CAPACITY 128
 
@@ -38,21 +39,21 @@ typedef struct {
 } filr_cmp_array;
 
 
-void filr_file_array_append(filr_context* context, filr_file* new_elem);
+result filr_file_array_append(filr_context* context, filr_file* new_elem);
 
-bool filr_load_directory(filr_context *context);
+result filr_load_directory(filr_context *context);
 
-void filr_init_context(filr_context *context);
+result filr_init_context(filr_context *context);
 
 void filr_init_cmp_array(filr_cmp_array *array);
 
 void filr_free_context(filr_context *context);
 
-void filr_create_file(filr_context  *context, cstr file_name);
+result filr_create_file(filr_context  *context, cstr file_name);
 
-void filr_rename_file(filr_context  *context, cstr file_name);
+result filr_rename_file(filr_context  *context, cstr file_name);
 
-void filr_delete_file(filr_context *context);
+result filr_delete_file(filr_context *context);
 
 void filr_reset(filr_context *context);
 
@@ -62,9 +63,9 @@ void filr_move_index_filename(filr_context  *context, cstr filename);
 
 void filr_reset_index(filr_context *context);
 
-bool filr_action(filr_context *context);
+result filr_action(filr_context *context);
 
-void filr_goto_directory(filr_context *context);
+result filr_goto_directory(filr_context *context);
 
 cstr *filr_get_name(filr_context *context, size_t ix);
 

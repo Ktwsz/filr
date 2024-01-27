@@ -3,6 +3,7 @@
 
 #include "lib/raylib.h"
 #include "filr.h"
+#include "result.h"
 
 
 typedef struct {
@@ -10,6 +11,8 @@ typedef struct {
     Vector2 text_size;
     Vector2 offset;
     bool hide_dotfiles;
+    bool show;
+    cstr str;
 } view_window;
 
 typedef struct {
@@ -20,11 +23,13 @@ typedef struct {
 } view_theme;
 
 typedef struct {
-    view_window window, header, input;
+    view_window window,
+        header,
+        input,
+        logger;
+
     view_theme theme;
     Rectangle size;
-    bool show_input;
-    cstr input_str;
 } view_t;
 
 typedef void(*mouse_input_callback_t)(const void *, Rectangle, int);
@@ -35,11 +40,21 @@ void view_directory(filr_context *context, view_window *window, view_theme *them
 
 void view_header(filr_context *context, view_window *window, view_theme *theme);
 
+void view_logger(view_window *window, view_theme *theme);
+
+void view_show_logger(view_t *view);
+
+void view_hide_logger(view_t *view);
+
 void view_show_input(view_t *view);
 
 void view_hide_input(view_t *view);
 
-void view_input(filr_context *context, view_window *window, view_theme *theme, cstr input_str);
+void view_set_input_str(view_t *view, cstr str);
+
+void view_set_logger_str(view_t *view, cstr str);
+
+void view_input(view_window *window, view_theme *theme);
 
 void view_center_camera(filr_context *context, view_t *view);
 

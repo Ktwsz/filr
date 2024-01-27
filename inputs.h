@@ -13,7 +13,8 @@
 typedef enum {
     INPUTS_NORMAL,
     INPUTS_CREATE,
-    INPUTS_RENAME
+    INPUTS_RENAME,
+    INPUTS_LOGGER
 } mode_enum;
 
 typedef struct {

@@ -8,21 +8,27 @@
 
 cstr CSTR_DASH = { .str = "/", .size = 1 };
 
-void filr_file_array_append(filr_context* context, filr_file* new_elem) {
+result filr_file_array_append(filr_context* context, filr_file* new_elem) {
     context->size++;
     if (!new_elem->is_dotfile) context->no_dotfiles_size++;
 
     if (context->files == NULL) {
-        context->files = malloc(context->capacity * sizeof(filr_file));
+        void *ptr = malloc(context->capacity * sizeof(filr_file));
+        if (ptr == NULL)
+            return RESULT_ERR("ERR: filr_file_array_append malloc failed");
+
+        context->files = ptr;
     }
 
     if (context->size > context->capacity) {
         context->capacity *= 2;
-        void *result = realloc(context->files, context->capacity * sizeof(filr_file));
-        assert(result != NULL);
+        void *ptr= realloc(context->files, context->capacity * sizeof(filr_file));
+        if (ptr == NULL)
+            return RESULT_ERR("ERR: filr_file_array_append realloc failed");
     }
 
     memcpy(context->files + (context->size - 1), new_elem, sizeof(filr_file));
+    return RESULT_OK;
 }
 
 void filr_parse_date(filr_date *dst, const FILETIME src) {
@@ -49,7 +55,7 @@ void filr_parse_file(filr_file *dst, WIN32_FIND_DATA src) {
 }
 
 
-bool filr_load_directory(filr_context *context) {
+result filr_load_directory(filr_context *context) {
     WIN32_FIND_DATA file;
     HANDLE hFind = NULL;
     char *dir = context->directory.str;
@@ -58,7 +64,7 @@ bool filr_load_directory(filr_context *context) {
     sprintf(str_path, "%s\\*.*", dir);
 
     if ((hFind = FindFirstFile(str_path, &file)) == INVALID_HANDLE_VALUE) {
-        return false;
+        return RESULT_ERR("ERR: filr_load_directory invalid handle");
     }
 
     do {
@@ -66,21 +72,23 @@ bool filr_load_directory(filr_context *context) {
 
         filr_parse_file(&next_file, file);
 
-        filr_file_array_append(context, &next_file);
+        result err = filr_file_array_append(context, &next_file);
+        if (err.err)
+            return err;
     } while (FindNextFile(hFind, &file));
 
     FindClose(hFind);
 
-    return true;
+    return RESULT_OK;
 }
 
-void filr_init_context(filr_context *context) {
+result filr_init_context(filr_context *context) {
     context->capacity = INIT_ARRAY_CAPACITY;
     char *HOME = getenv("HOMEPATH");
     printf("%s\n", HOME);
     cstr_init_name(&(context->directory), HOME);
     
-    filr_load_directory(context);
+    return filr_load_directory(context);
 }
 
 
@@ -100,7 +108,7 @@ void filr_free_context(filr_context *context) {
     free(context->files);
 }
 
-void filr_create_file(filr_context  *context, cstr file_name) {
+result filr_create_file(filr_context  *context, cstr file_name) {
     cstr file_path;
     cstr_init(&file_path, 0);
     cstr_concat(&file_path, 3, context->directory, CSTR_DASH, file_name);
@@ -111,11 +119,17 @@ void filr_create_file(filr_context  *context, cstr file_name) {
                           CREATE_NEW,
                           FILE_ATTRIBUTE_NORMAL,
                           0);
+
+    if (handle == INVALID_HANDLE_VALUE)
+        return RESULT_ERR("ERR: filr_create_file error");
+
     CloseHandle(handle);
+    return RESULT_OK;
 }
 
-void filr_rename_file(filr_context  *context, cstr new_file_name) {
-    assert_return(context->file_index > 1);
+result filr_rename_file(filr_context  *context, cstr new_file_name) {
+    if (context->file_index <= 1)
+        return RESULT_ERR("WARN: filr_rename_file file index less than 2");
 
     cstr old_file_name = *filr_get_name(context, context->file_index);
     cstr old_file_path;
@@ -126,19 +140,24 @@ void filr_rename_file(filr_context  *context, cstr new_file_name) {
     cstr_init(&new_file_path, 0);
     cstr_concat(&new_file_path, 3, context->directory, CSTR_DASH, new_file_name);
 
-    bool _ = MoveFile(old_file_path.str,
+    bool err = MoveFile(old_file_path.str,
                         new_file_path.str);
+
+    return (err) ? RESULT_OK : RESULT_ERR("ERR: filr_rename_file failed renaming");
 }
 
-void filr_delete_file(filr_context *context) {
-    assert_return(context->file_index > 1);
+result filr_delete_file(filr_context *context) {
+    if (context->file_index <= 1)
+        return RESULT_ERR("WARN: filr_delete_file file index less than 2");
 
     cstr file = *filr_get_name(context, context->file_index);
     cstr file_path;
     cstr_init(&file_path, 0);
     cstr_concat(&file_path, 3, context->directory, CSTR_DASH, file);
 
-    bool _ = DeleteFile(file_path.str);
+    bool err = DeleteFile(file_path.str);
+
+    return (err) ? RESULT_OK : RESULT_ERR("ERR: filr_delete_file failed delete");
 }
 
 size_t filr_find_next_index(filr_context *context, int range, int step) {
@@ -180,26 +199,25 @@ void filr_reset_index(filr_context *context) {
 }
 
 
-bool filr_action(filr_context *context) {
+result filr_action(filr_context *context) {
     size_t ix = context->file_index;
     filr_file file = context->files[ix];
 
     if (file.is_directory) {
-        filr_goto_directory(context);
-        return true;
+        return filr_goto_directory(context);
     }
 
-    ShellExecute(NULL,
+    INT_PTR err = (INT_PTR) ShellExecute(NULL,
                  NULL,
                  file.name.str,
                  NULL,
                  context->directory.str,
                  0);
 
-    return false;
+    return (err > 32) ? RESULT_OK : RESULT_ERR("ERR: filr_action failed call shell execute");
 }
 
-void filr_goto_directory(filr_context* context) {
+result filr_goto_directory(filr_context* context) {
     cstr goto_directory = *filr_get_name(context, context->file_index);
 
     if (strcmp(goto_directory.str, "..") == 0) {
@@ -215,7 +233,7 @@ void filr_goto_directory(filr_context* context) {
     }
 
     filr_reset(context);
-    filr_load_directory(context);
+    return filr_load_directory(context);
 }
 
 cstr *filr_get_name(filr_context *context, size_t ix) {

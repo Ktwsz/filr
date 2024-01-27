@@ -3,6 +3,7 @@
 #include "filr.h"
 #include "view.h"
 #include "inputs.h"
+#include <assert.h>
 
 #define INIT_WINDOW_HEIGHT 800
 #define INIT_WINDOW_WIDTH 800
@@ -14,7 +15,10 @@ int main(void) {
     filr_init_cmp_array(&cmp_array);
 
     filr_context context = {0};
-    filr_init_context(&context);
+    result err = filr_init_context(&context);
+
+    assert(!err.err);
+
     qsort(&(context.files[2]), context.size - 2, sizeof(filr_file), cmp_array.array[cmp_array.ix]);
 
     inputs_t input = {0};

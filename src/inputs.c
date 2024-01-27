@@ -31,11 +31,30 @@ void inputs_init(inputs_t *input) {
 #define key_rename_confirm KEY_ENTER
 #define key_input_mode_cancel KEY_LEFT_SHIFT
 #define key_input_mode_delete_last KEY_BACKSPACE
+#define key_logger_close KEY_LEFT_SHIFT
 
 #define HANDLE_INPUT(input, ...) if (IsKeyPressed(key_##input)) input(__VA_ARGS__)
 #define HANDLE_INPUT_MOUSE(input, ...) if (IsMouseButtonPressed(key_##input)) input(__VA_ARGS__)
 #define HANDLE_INPUT_MOUSE_SCROLL(...) mouse_scroll(__VA_ARGS__)
 #define HANDLE_INPUT_DOWN(input, ...) if (IsKeyDown(key_##input)) input(__VA_ARGS__)
+
+
+void input_mode_cancel(INPUTS_ARGS);
+
+void logger_setup(INPUTS_ARGS, const char *message) {
+    cstr err_message;
+    cstr_init_name(&err_message, message);
+    view_set_logger_str(view, err_message);
+    view_show_logger(view);
+    if (input->mode == INPUTS_RENAME || input->mode == INPUTS_CREATE)
+        input_mode_cancel(context, view, input);
+    input->mode = INPUTS_LOGGER;
+}
+
+void logger_close(view_t *view, inputs_t *input) {
+    input->mode = INPUTS_NORMAL;
+    view_hide_logger(view);
+}
 
 
 void center_camera(BASE_ARGS) {
@@ -52,8 +71,14 @@ void move_one_up(BASE_ARGS) {
     view_move_camera(context, view);
 }
 
-void file_action(BASE_ARGS) {
-    bool dir_change = filr_action(context);
+void file_action(INPUTS_ARGS) {
+    bool dir_change = context->files[context->file_index].is_directory;
+    result err = filr_action(context);
+    if (err.err) {
+        logger_setup(context, view, input, err.message);
+        return;
+    }
+
     if (dir_change) {
         filr_reset_index(context);
         view_move_camera(context, view);
@@ -62,7 +87,7 @@ void file_action(BASE_ARGS) {
 
 void mouse_left_click(INPUTS_ARGS) {
     if (context->file_index == input->mouse_ix) {
-        file_action(context, view);
+        file_action(context, view, input);
     } else if (input->mouse_ix != -1) context->file_index = input->mouse_ix;
 }
 
@@ -130,9 +155,20 @@ void input_mode_cancel(INPUTS_ARGS) {
 }
 
 void create_confirm(INPUTS_ARGS) {
-    filr_create_file(context, input->input_str);
+    result create_err = filr_create_file(context, input->input_str);
+
+    if (create_err.err) {
+        logger_setup(context, view, input, create_err.message);
+        return;
+    }
+
     filr_reset(context);
-    filr_load_directory(context);
+    result load_err = filr_load_directory(context);
+    if (load_err.err) {
+        logger_setup(context, view, input, load_err.message);
+        return;
+    }
+
     filr_move_index_filename(context, input->input_str);
     view_center_camera(context, view);
 
@@ -141,13 +177,22 @@ void create_confirm(INPUTS_ARGS) {
 
 void input_mode_delete_last(view_t *view, inputs_t *input) {
     cstr_pop(&input->input_str);
-    cstr_pop(&view->input_str);
+    view_set_input_str(view, input->input_str);
 }
 
-void delete_file(filr_context *context) {//TODO: delete directory
-    filr_delete_file(context);
+void delete_file(INPUTS_ARGS) {//TODO: delete directory
+    result delete_err = filr_delete_file(context);
+
+    if (delete_err.err) {
+        logger_setup(context, view, input, delete_err.message);
+        return;
+    }
+
     filr_reset(context);
-    filr_load_directory(context);
+    result load_err = filr_load_directory(context);
+    if (load_err.err) {
+        logger_setup(context, view, input, load_err.message);
+    }
 }
 
 
@@ -160,20 +205,28 @@ void input_mode_parse_key_queue(view_t *view, inputs_t *input) {
         key_pressed = GetCharPressed();
     }
 
-    cstr_copy(&view->input_str, input->input_str);
+    view_set_input_str(view, input->input_str);
 }
 
 void rename_start(INPUTS_ARGS) {
     input_mode_start(context, view, input, INPUTS_RENAME);
 
-    cstr_copy(&view->input_str, *filr_get_name(context, context->file_index));
     cstr_copy(&input->input_str, *filr_get_name(context, context->file_index));
+    view_set_input_str(view, input->input_str);
 }
 
 void rename_confirm(INPUTS_ARGS) {
-    filr_rename_file(context, input->input_str);
+    result rename_err = filr_rename_file(context, input->input_str);
+    if (rename_err.err) {
+        logger_setup(context, view, input, rename_err.message);
+        return;
+    }
     filr_reset(context);
-    filr_load_directory(context);
+    result load_err = filr_load_directory(context);
+    if (load_err.err) {
+        logger_setup(context, view, input, load_err.message);
+        return;
+    }
     filr_move_index_filename(context, input->input_str);
     view_center_camera(context, view);
 
@@ -189,7 +242,7 @@ void handle_key_presses(ALL_ARGS) {
 
             HANDLE_INPUT(move_one_up, context, view);
 
-            HANDLE_INPUT(file_action, context, view);
+            HANDLE_INPUT(file_action, context, view, input);
 
             HANDLE_INPUT(change_file_sorting, context, view, cmp_array);
 
@@ -197,7 +250,7 @@ void handle_key_presses(ALL_ARGS) {
 
             HANDLE_INPUT(create_start, context, view, input);
 
-            HANDLE_INPUT(delete_file, context);
+            HANDLE_INPUT(delete_file, context, view, input);
 
             HANDLE_INPUT(rename_start, context, view, input);
 
@@ -225,6 +278,10 @@ void handle_key_presses(ALL_ARGS) {
             HANDLE_INPUT(input_mode_cancel, context, view, input);
             HANDLE_INPUT(input_mode_delete_last, view, input);
             input_mode_parse_key_queue(view, input);
+            break;
+
+        case INPUTS_LOGGER:
+            HANDLE_INPUT(logger_close, view, input);
             break;
     }
 }
