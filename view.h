@@ -17,10 +17,11 @@ typedef struct {
 } view_window;
 
 typedef struct {
-    Color passive, highlight, bg;
+    Color passive, light, bg, dark;
     Font font;
     Texture2D bg_texture;
     hash_map file_icons;
+    bool has_bg_texture;
 } view_theme;
 
 typedef struct {

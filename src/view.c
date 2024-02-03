@@ -2,7 +2,8 @@
 
 #include <math.h>
 
-#include "theme_constants.c"
+#include "../resources/theme_blue.h"
+//#include "../resources/theme_pink.h"
 
 #define LOAD_SVG(name, file_name) t = load_svg(file_name##_icon_dir, size); \
                                   err = hash_map_insert(&theme->file_icons, #name, &t); \
@@ -54,12 +55,18 @@ void view_set_size_logger(view_window *logger, int window_width, int window_heig
 }
 
 result theme_init(view_theme *theme, Vector2 size) {
+#ifdef BG_IMG_DIR
+    theme->has_bg_texture = true;
     theme->bg_texture = LoadTexture(BG_IMG_DIR);
+#else
+    theme->has_bg_texture = false;
+#endif
 
     theme->font = LoadFontEx(FONT_DIR, 32, 0, 250);
 
     theme->passive = PASSIVE_COLOR;
-    theme->highlight = HIGHLIGHT_COLOR;
+    theme->light= HIGHLIGHT_LIGHT_COLOR;
+    theme->dark= HIGHLIGHT_DARK_COLOR;
     theme->bg = BG_COLOR;
 
     result err;
@@ -127,6 +134,8 @@ result view_init(view_t *view, int window_width, int window_height) {
 
 void view_draw_background(view_t *view) {
     ClearBackground(view->theme.bg);
+    if (!view->theme.has_bg_texture)
+        return;
 
     int bg_pos_x = ((int)view->size.width - view->theme.bg_texture.width) / 2;
     int bg_pos_y = ((int)view->size.height - view->theme.bg_texture.height) / 2;
@@ -238,12 +247,13 @@ void view_directory(filr_context *context, view_window *window, view_theme *them
         cstr row_str;
         get_row_str(&row_str, context->files[file_ix], max_text_width);
 
+        Color color = (context->files[file_ix].is_directory)? theme->dark: theme->light;
         DrawTextEx(theme->font,
                    row_str.str,
                    draw_text_pos,
                    (float)theme->font.baseSize,
                    2,
-                   theme->highlight);
+                   color);
 
 
         mouse_input_callback(inputs_ptr, row_rect, file_ix);
@@ -278,7 +288,7 @@ void view_header(filr_context *context, view_window *header, view_theme *theme) 
                (Vector2){header_rect.x, header_rect.y},
                (float)theme->font.baseSize,
                2,
-               theme->highlight);
+               theme->dark);
 }
 
 void view_input(view_window *window, view_theme *theme) {
@@ -296,7 +306,7 @@ void view_input(view_window *window, view_theme *theme) {
                (Vector2){input_rect.x, input_rect.y},
                (float)theme->font.baseSize,
                2,
-               theme->highlight);
+               theme->light);
 }
 
 void view_logger(view_window *window, view_theme *theme) {
@@ -314,7 +324,7 @@ void view_logger(view_window *window, view_theme *theme) {
                (Vector2){window->offset.x, window->offset.y + window->camera.height / 2},
                (float)theme->font.baseSize / 1.5f,
                2,
-               theme->highlight);
+               theme->light);
 }
 
 void view_center_camera(filr_context *context, view_t *view) {
@@ -372,7 +382,7 @@ void view_set_logger_str(view_t *view, cstr str) {
 
 void view_scroll_bar(filr_context *context, size_t ix, view_window *window, view_theme *theme) {
     float height = ((float) ix) / (float) context->size;
-    DrawRectangle(window->offset.x + window->camera.x + window->camera.width - 10, window->offset.y, 10, (int) (height * window->camera.height), theme->highlight);
+    DrawRectangle(window->offset.x + window->camera.x + window->camera.width - 10, window->offset.y, 10, (int) (height * window->camera.height), theme->dark);
 }
 
 void view_theme_free(view_theme *theme) {
