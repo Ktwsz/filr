@@ -6,6 +6,9 @@
 #include <stdio.h>
 #include <time.h>
 
+#define HASH_P 53
+#define HASH_M 1000000009
+
 #define assert_return(expr) if (!(expr)) return
 
 void cstr_init(cstr *dst, size_t size) {
@@ -177,11 +180,23 @@ void cstr_strip_extension(cstr *dst, cstr src) {
     sprintf(dst->str, "%s", src.str + i + 1);
 }
 
-int cstr_hash(char *s) {
-    const int p = 53, m = 1000000009;
-    int pow = 1;
+size_t cstr_hash(cstr s) {
+    const size_t p = HASH_P, m = HASH_M;
+    size_t pow = 1;
 
-    int result = 0;
+    size_t result = 0;
+    for (size_t i = 0; i < s.size; ++i){
+        result = (result + (s.str[i]+ 1) * pow ) % m;
+        pow *= p;
+    }
+    return result;
+}
+
+size_t cstr_hash_str(const char *s) {
+    const size_t p = HASH_P, m = HASH_M;
+    size_t pow = 1;
+
+    size_t result = 0;
     while (*s) {
         result = (result + (*s++ + 1) * pow ) % m;
         pow *= p;

@@ -6,7 +6,7 @@
 
 #define assert_return(expr) if (!(expr)) return
 
-cstr CSTR_DASH = { .str = "/", .size = 1 };
+cstr CSTR_DASH = { .str = "\\", .size = 1 };
 
 result filr_file_array_append(filr_context* context, filr_file* new_elem) {
     context->size++;
@@ -45,13 +45,21 @@ void filr_parse_date(filr_date *dst, const FILETIME src) {
 
 void filr_parse_file(filr_file *dst, WIN32_FIND_DATA src) { 
     cstr_init_name(&(dst->name), src.cFileName);
+    cstr_init(&dst->extension, 0);
 
     dst->is_directory = src.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
+    dst->is_dotfile = strcmp(dst->name.str, "..") != 0 && strcmp(dst->name.str, ".") != 0 && dst->name.str[0] == '.';
+
+    if (dst->is_directory) {
+        cstr_init_name(&dst->extension, "folder");
+    } else if (dst->is_dotfile) {
+        cstr_init_name(&dst->extension, "file");
+    } else {
+        cstr_strip_extension(&dst->extension, dst->name);
+    }
 
     dst->size = src.nFileSizeHigh * (MAXDWORD + 1) + src.nFileSizeLow;
     filr_parse_date(&(dst->last_edit_date), src.ftLastWriteTime);
-
-    dst->is_dotfile = strcmp(dst->name.str, "..") != 0 && strcmp(dst->name.str, ".") != 0 && dst->name.str[0] == '.';
 }
 
 
@@ -244,7 +252,7 @@ cstr *filr_get_name(filr_context *context, size_t ix) {
 void filr_print_array(filr_context *context) {
     printf("size: %zu\n", context->size);
     for (size_t i = 0; i < context->size; ++i) {
-        printf("i: %zu str size: %zu ", i, context->files[i].name.size);
+        printf("i: %zu str size: %zu, is_dotfile: %d", i, context->files[i].name.size, context->files[i].is_dotfile);
         printf("%s\n", filr_get_name(context, i)->str);
     }
 

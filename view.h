@@ -4,6 +4,7 @@
 #include "lib/raylib.h"
 #include "filr.h"
 #include "result.h"
+#include "hash_map.h"
 
 
 typedef struct {
@@ -19,7 +20,7 @@ typedef struct {
     Color passive, highlight, bg;
     Font font;
     Texture2D bg_texture;
-    Texture2D folder_texture, file_texture, c_texture, cpp_texture, exe_texture, hs_texture, html_texture, img_texture, java_texture, js_texture, pdf_texture, py_texture, zip_texture;
+    hash_map file_icons;
 } view_theme;
 
 typedef struct {
@@ -64,7 +65,7 @@ void view_handle_resize(filr_context *context, view_t *view);
 
 void view_scroll_bar(filr_context *context, size_t ix, view_window *window, view_theme *theme);
 
-void view_init(view_t *view, int window_width, int window_height);
+result view_init(view_t *view, int window_width, int window_height);
 
 void view_draw_background(view_t *view);
 

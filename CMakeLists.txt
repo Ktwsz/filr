@@ -13,6 +13,8 @@ add_executable(filr_explorer main.c
         filr.h
         src/filr.c
         result.h
+        hash_map.h
+        src/hash_map.c
 )
 
 target_link_directories(filr_explorer PUBLIC lib)

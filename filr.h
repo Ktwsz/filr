@@ -16,6 +16,7 @@ typedef struct {
 
 typedef struct {
     cstr name;
+    cstr extension;
     bool is_directory;
     bool is_dotfile;
     size_t size;

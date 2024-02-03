@@ -15,7 +15,9 @@ int main(void) {
     filr_init_cmp_array(&cmp_array);
 
     filr_context context = {0};
-    result err = filr_init_context(&context);
+
+    result err;
+    err = filr_init_context(&context);
 
     assert(!err.err);
 
@@ -31,7 +33,8 @@ int main(void) {
     SetTargetFPS(30);
 
     view_t view;
-    view_init(&view, INIT_WINDOW_WIDTH, INIT_WINDOW_HEIGHT);
+    err = view_init(&view, INIT_WINDOW_WIDTH, INIT_WINDOW_HEIGHT);
+    assert(!err.err);
 
     while (!WindowShouldClose()) {
         view_handle_resize(&context, &view);

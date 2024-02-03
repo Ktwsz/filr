@@ -4,31 +4,16 @@
 
 #include "theme_constants.c"
 
-#define LOAD_SVG(a) view->theme.a##_texture = load_svg(a##_icon_dir, view->window.text_size)
-#define UNLOAD(a) UnloadTexture(view->theme.a##_texture)
-
-#define C_EXT_HASH cstr_hash("c")
-#define H_EXT_HASH cstr_hash("h")
-#define CPP_EXT_HASH cstr_hash("cpp") 
-#define HPP_EXT_HASH cstr_hash("hpp") 
-#define EXE_EXT_HASH cstr_hash("exe") 
-#define HS_EXT_HASH cstr_hash("hs")
-#define HTML_EXT_HASH cstr_hash("html")
-#define JPG_EXT_HASH cstr_hash("jpg")
-#define PNG_EXT_HASH cstr_hash("png")
-#define JPEG_EXT_HASH cstr_hash("jpeg")
-#define GIF_EXT_HASH cstr_hash("gif")
-#define JAVA_EXT_HASH cstr_hash("java")
-#define JS_EXT_HASH cstr_hash("js")
-#define PDF_EXT_HASH cstr_hash("pdf")
-#define PY_EXT_HASH cstr_hash("py")
-#define ZIP_EXT_HASH cstr_hash("zip")
+#define LOAD_SVG(name, file_name) t = load_svg(file_name##_icon_dir, size); \
+                                  err = hash_map_insert(&theme->file_icons, #name, &t); \
+                                  if (err.err) return err;
 
 #define LOGGER_WIDTH 600.0f
 #define LOGGER_HEIGHT 600.0f
 
 
 cstr CSTR_SPACE = { .str = " ", .size = 1 };
+cstr CSTR_FILE = { .str = "file", .size = 4 };
 
 Texture load_svg(const char *src, Vector2 size) {
     Image img = LoadImageSvg(src, (int)size.y, (int)size.y);
@@ -68,7 +53,44 @@ void view_set_size_logger(view_window *logger, int window_width, int window_heig
     logger->offset = (Vector2) {.x = pos_x, .y = pos_y};
 }
 
-void view_init(view_t *view, int window_width, int window_height) {
+result theme_init(view_theme *theme, Vector2 size) {
+    theme->bg_texture = LoadTexture(BG_IMG_DIR);
+
+    theme->font = LoadFontEx(FONT_DIR, 32, 0, 250);
+
+    theme->passive = PASSIVE_COLOR;
+    theme->highlight = HIGHLIGHT_COLOR;
+    theme->bg = BG_COLOR;
+
+    result err;
+    err = hash_map_init(&theme->file_icons, sizeof(Texture));
+    if (err.err)
+        return err;
+
+    Texture t;
+    LOAD_SVG(folder, folder)
+    LOAD_SVG(file, file)
+    LOAD_SVG(c, c)
+    LOAD_SVG(h, c)
+    LOAD_SVG(cpp, cpp)
+    LOAD_SVG(hpp, cpp)
+    LOAD_SVG(exe, exe)
+    LOAD_SVG(hs, hs)
+    LOAD_SVG(html, html)
+    LOAD_SVG(jpg, img)
+    LOAD_SVG(png, img)
+    LOAD_SVG(jpeg, img)
+    LOAD_SVG(gif, img)
+    LOAD_SVG(java, java)
+    LOAD_SVG(js, js)
+    LOAD_SVG(pdf, pdf)
+    LOAD_SVG(py, py)
+    LOAD_SVG(zip, zip)
+
+    return RESULT_OK;
+}
+
+result view_init(view_t *view, int window_width, int window_height) {
     view->size = (Rectangle) {.x = 0.0f, .y = 0.0f, .width = (float)window_width, .height = (float)window_height};
 
     view->header = (view_window){0};
@@ -97,28 +119,10 @@ void view_init(view_t *view, int window_width, int window_height) {
     view->logger.show = false;
     cstr_init(&view->logger.str, 0);
 
-    view->theme.font = LoadFontEx(FONT_DIR, 32, 0, 250);
 
-    view->theme.passive = PASSIVE_COLOR;
-    view->theme.highlight = HIGHLIGHT_COLOR;
-    view->theme.bg = BG_COLOR;
+    result err = theme_init(&view->theme, view->window.text_size);
+    return err;
 
-
-    view->theme.bg_texture = LoadTexture(BG_IMG_DIR);
-
-    LOAD_SVG(folder);
-    LOAD_SVG(file);
-    LOAD_SVG(c);
-    LOAD_SVG(cpp);
-    LOAD_SVG(exe);
-    LOAD_SVG(hs);
-    LOAD_SVG(html);
-    LOAD_SVG(img);
-    LOAD_SVG(java);
-    LOAD_SVG(js);
-    LOAD_SVG(pdf);
-    LOAD_SVG(py);
-    LOAD_SVG(zip);
 }
 
 void view_draw_background(view_t *view) {
@@ -139,47 +143,11 @@ Vector2 get_position(size_t ix, Vector2 text_size) {
 }
 
 Texture get_file_icon(view_theme *theme, filr_file file) {
-    if (file.is_directory) 
-        return theme->folder_texture;
+    Texture *t = hash_map_get(&theme->file_icons, file.extension);
+    if (t == NULL)
+        t = hash_map_get(&theme->file_icons, CSTR_FILE);
 
-    cstr extension;
-    cstr_strip_extension(&extension, file.name);
-
-    int hash = cstr_hash(extension.str);
-    if (C_EXT_HASH == hash)
-            return theme->c_texture;
-    if (H_EXT_HASH == hash)
-            return theme->c_texture;
-    if (CPP_EXT_HASH == hash)
-            return theme->cpp_texture;
-    if (HPP_EXT_HASH == hash)
-            return theme->cpp_texture;
-    if (EXE_EXT_HASH == hash)
-            return theme->exe_texture;
-    if (HS_EXT_HASH == hash)
-            return theme->hs_texture;
-    if (HTML_EXT_HASH == hash)
-            return theme->html_texture;
-    if (JPG_EXT_HASH == hash)
-            return theme->img_texture;
-    if (PNG_EXT_HASH == hash)
-            return theme->img_texture;
-    if (JPEG_EXT_HASH == hash)
-            return theme->img_texture;
-    if (PNG_EXT_HASH == hash)
-            return theme->img_texture;
-    if (JAVA_EXT_HASH == hash)
-            return theme->java_texture;
-    if (JS_EXT_HASH == hash)
-            return theme->js_texture;
-    if (PDF_EXT_HASH == hash)
-            return theme->pdf_texture;
-    if (PY_EXT_HASH == hash)
-            return theme->py_texture;
-    if (ZIP_EXT_HASH)
-            return theme->zip_texture;
-
-    return theme->file_texture;
+    return *t;
 }
 
 
@@ -344,7 +312,7 @@ void view_logger(view_window *window, view_theme *theme) {
     DrawTextEx(theme->font,//TODO: this also perhaps
                window->str.str,
                (Vector2){window->offset.x, window->offset.y + window->camera.height / 2},
-               (float)theme->font.baseSize,
+               (float)theme->font.baseSize / 1.5f,
                2,
                theme->highlight);
 }
@@ -407,19 +375,10 @@ void view_scroll_bar(filr_context *context, size_t ix, view_window *window, view
     DrawRectangle(window->offset.x + window->camera.x + window->camera.width - 10, window->offset.y, 10, (int) (height * window->camera.height), theme->highlight);
 }
 
+void view_theme_free(view_theme *theme) {
+    hash_map_free(&theme->file_icons);
+}
+
 void view_free(view_t *view) {
-    UNLOAD(bg);
-    UNLOAD(folder);
-    UNLOAD(file);
-    UNLOAD(c);
-    UNLOAD(cpp);
-    UNLOAD(exe);
-    UNLOAD(hs);
-    UNLOAD(html);
-    UNLOAD(img);
-    UNLOAD(java);
-    UNLOAD(js);
-    UNLOAD(pdf);
-    UNLOAD(py);
-    UNLOAD(zip);
+    view_theme_free(&view->theme);
 }
