@@ -13,7 +13,7 @@ void inputs_init(inputs_t *input) {
 
 #define BASE_ARGS filr_context *context, view_t *view
 #define INPUTS_ARGS filr_context *context, view_t *view, inputs_t *input
-#define ALL_ARGS filr_context *context, view_t *view, inputs_t *input, filr_cmp_array *cmp_array
+#define ALL_ARGS filr_context *context, view_t *view, inputs_t *input
 
 #define key_center_camera KEY_Z
 #define key_move_one_down KEY_DOWN
@@ -62,17 +62,17 @@ void center_camera(BASE_ARGS) {
 }
 
 void move_one_down(BASE_ARGS) {
-    filr_move_index(context, 1, view->window.hide_dotfiles);
+    filr_move_index(context, 1);
     view_move_camera(context, view);
 }
 
 void move_one_up(BASE_ARGS) {
-    filr_move_index(context, -1, view->window.hide_dotfiles);
+    filr_move_index(context, -1);
     view_move_camera(context, view);
 }
 
 void file_action(INPUTS_ARGS) {
-    bool dir_change = context->files[context->file_index].is_directory;
+    bool dir_change = context->files_visible.files[context->visible_index].is_directory;
     result err = filr_action(context);
     if (err.err) {
         logger_setup(context, view, input, err.message);
@@ -80,15 +80,15 @@ void file_action(INPUTS_ARGS) {
     }
 
     if (dir_change) {
-        filr_reset_index(context);
+        context->visible_index = 0;
         view_move_camera(context, view);
     }
 }
 
 void mouse_left_click(INPUTS_ARGS) {
-    if (context->file_index == input->mouse_ix) {
+    if (context->visible_index == input->mouse_ix) {
         file_action(context, view, input);
-    } else if (input->mouse_ix != -1) context->file_index = input->mouse_ix;
+    } else if (input->mouse_ix != -1) context->visible_index = input->mouse_ix;
 }
 
 
@@ -97,7 +97,7 @@ void scroll(INPUTS_ARGS, float scroll_move) {
     if (fabs(input->scroll_pos) > SCROLL_STEP) {
         int step = (int) (input->scroll_pos / SCROLL_STEP);
         input->scroll_pos -= (float) (step) * SCROLL_STEP;
-        filr_move_index(context, -step, view->window.hide_dotfiles);
+        filr_move_index(context, -step);
         view_center_camera(context, view);
     }
 }
@@ -125,18 +125,25 @@ void key_scroll_up(INPUTS_ARGS) {
         scroll(context, view, input, SCROLL_KEY_SPEED);
 }
 
-void change_file_sorting(BASE_ARGS, filr_cmp_array *cmp_array) {
-    cmp_array->ix = (cmp_array->ix + 1) % cmp_array->size;
-    size_t ix = cmp_array->ix;
-
-    qsort(&(context->files[2]), context->size - 2, sizeof(filr_file), cmp_array->array[ix]);
+void change_file_sorting(INPUTS_ARGS) {
+    result err = filr_next_sorting_ix(context);
+    if (err.err)  {
+        logger_setup(context, view, input, err.message);
+        return;
+    }
+    context->visible_index = 0;
     view_center_camera(context, view);
 }
 
-void view_dotfiles(BASE_ARGS) {
+void view_dotfiles(INPUTS_ARGS) {
     view->window.hide_dotfiles = !view->window.hide_dotfiles;
-    if (view->window.hide_dotfiles && context->files[context->file_index].is_dotfile)
-        move_one_down(context, view);
+    result err = filr_set_hide_dotfiles(context, view->window.hide_dotfiles);
+    if (err.err)  {
+        logger_setup(context, view, input, err.message);
+        return;
+    }
+    context->visible_index = 0;
+    view_center_camera(context, view);
 }
 
 void input_mode_start(INPUTS_ARGS, mode_enum mode) {
@@ -162,7 +169,7 @@ void create_confirm(INPUTS_ARGS) {
         return;
     }
 
-    filr_reset(context);
+    context->files_all.size = 0;
     result load_err = filr_load_directory(context);
     if (load_err.err) {
         logger_setup(context, view, input, load_err.message);
@@ -188,7 +195,7 @@ void delete_file(INPUTS_ARGS) {//TODO: delete directory
         return;
     }
 
-    filr_reset(context);
+    context->files_all.size = 0;
     result load_err = filr_load_directory(context);
     if (load_err.err) {
         logger_setup(context, view, input, load_err.message);
@@ -211,7 +218,7 @@ void input_mode_parse_key_queue(view_t *view, inputs_t *input) {
 void rename_start(INPUTS_ARGS) {
     input_mode_start(context, view, input, INPUTS_RENAME);
 
-    cstr_copy(&input->input_str, *filr_get_name(context, context->file_index));
+    cstr_copy(&input->input_str, *filr_get_name_visible(context, context->visible_index));
     view_set_input_str(view, input->input_str);
 }
 
@@ -221,7 +228,8 @@ void rename_confirm(INPUTS_ARGS) {
         logger_setup(context, view, input, rename_err.message);
         return;
     }
-    filr_reset(context);
+
+    context->files_all.size = 0;
     result load_err = filr_load_directory(context);
     if (load_err.err) {
         logger_setup(context, view, input, load_err.message);
@@ -244,9 +252,9 @@ void handle_key_presses(ALL_ARGS) {
 
             HANDLE_INPUT(file_action, context, view, input);
 
-            HANDLE_INPUT(change_file_sorting, context, view, cmp_array);
+            HANDLE_INPUT(change_file_sorting, context, view, input);
 
-            HANDLE_INPUT(view_dotfiles, context, view);
+            HANDLE_INPUT(view_dotfiles, context, view, input);
 
             HANDLE_INPUT(create_start, context, view, input);
 

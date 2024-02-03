@@ -8,26 +8,25 @@
 
 cstr CSTR_DASH = { .str = "\\", .size = 1 };
 
-result filr_file_array_append(filr_context* context, filr_file* new_elem) {
-    context->size++;
-    if (!new_elem->is_dotfile) context->no_dotfiles_size++;
+result filr_file_array_append(filr_array *array, filr_file* new_elem) {
+    array->size++;
 
-    if (context->files == NULL) {
-        void *ptr = malloc(context->capacity * sizeof(filr_file));
+    if (array->files == NULL) {
+        void *ptr = malloc(array->capacity * sizeof(filr_file));
         if (ptr == NULL)
             return RESULT_ERR("ERR: filr_file_array_append malloc failed");
 
-        context->files = ptr;
+        array->files = ptr;
     }
 
-    if (context->size > context->capacity) {
-        context->capacity *= 2;
-        void *ptr= realloc(context->files, context->capacity * sizeof(filr_file));
+    if (array->size > array->capacity) {
+        array->capacity *= 2;
+        void *ptr= realloc(array->files, array->capacity * sizeof(filr_file));
         if (ptr == NULL)
             return RESULT_ERR("ERR: filr_file_array_append realloc failed");
     }
 
-    memcpy(context->files + (context->size - 1), new_elem, sizeof(filr_file));
+    memcpy(array->files + (array->size - 1), new_elem, sizeof(filr_file));
     return RESULT_OK;
 }
 
@@ -80,40 +79,94 @@ result filr_load_directory(filr_context *context) {
 
         filr_parse_file(&next_file, file);
 
-        result err = filr_file_array_append(context, &next_file);
+        result err = filr_file_array_append(&context->files_all, &next_file);
         if (err.err)
             return err;
     } while (FindNextFile(hFind, &file));
 
     FindClose(hFind);
 
+    result err = filr_visible_update(context);
+    if (err.err)
+        return err;
+
     return RESULT_OK;
 }
 
 result filr_init_context(filr_context *context) {
-    context->capacity = INIT_ARRAY_CAPACITY;
+    filr_init_cmp_array(context->cmp_array);
+
+    context->files_all.capacity = INIT_ARRAY_CAPACITY;
+    context->files_visible.capacity = INIT_ARRAY_CAPACITY;
+
+    context->view_config.sorting_function_ix = 0;
+    context->view_config.hide_dotfiles = true;
+
     char *HOME = getenv("HOMEPATH");
     printf("%s\n", HOME);
     cstr_init_name(&(context->directory), HOME);
     
-    return filr_load_directory(context);
+    result load_err = filr_load_directory(context);
+    if (load_err.err)
+        return load_err;
+
+    result view_err = filr_visible_update(context);
+    if (view_err.err)
+        return view_err;
+
+    return RESULT_OK;
 }
 
 
-void filr_init_cmp_array(filr_cmp_array *array) {
-    array->size = 6;
-    array->ix = 0;
-
-    array->array[0] = filr_file_comparator_basic;
-    array->array[1] = filr_file_comparator_size;
-    array->array[2] = filr_file_comparator_size_inv;
-    array->array[3] = filr_file_comparator_edit_date;
-    array->array[4] = filr_file_comparator_extension;
-    array->array[5] = filr_file_comparator_alphabetic;
+void filr_init_cmp_array(filr_comparator  *array) {
+    array[0] = filr_file_comparator_basic;
+    array[1] = filr_file_comparator_size;
+    array[2] = filr_file_comparator_size_inv;
+    array[3] = filr_file_comparator_edit_date;
+    array[4] = filr_file_comparator_extension;
+    array[5] = filr_file_comparator_alphabetic;
 }
 
 void filr_free_context(filr_context *context) {
-    free(context->files);
+    free(context->files_all.files);
+    free(context->files_visible.files);
+}
+
+result filr_visible_update(filr_context *context) {
+    context->files_visible.size = 0;
+    for (size_t i = 0; i < context->files_all.size; ++i) {
+        if (context->view_config.hide_dotfiles && context->files_all.files[i].is_dotfile)
+            continue;
+
+        result err = filr_file_array_append(&context->files_visible, &context->files_all.files[i]);
+        if (err.err)
+            return err;
+
+        context->files_visible.files[context->files_visible.size - 1].all_files_index = i;
+    }
+
+    qsort(&(context->files_visible.files[2]), context->files_visible.size - 2, sizeof(filr_file), context->cmp_array[context->view_config.sorting_function_ix]);
+
+    return RESULT_OK;
+}
+
+result filr_next_sorting_ix(filr_context *context) {
+    size_t ix = context->view_config.sorting_function_ix;
+    context->view_config.sorting_function_ix = (ix + 1) % 6;
+
+    result err = filr_visible_update(context);
+    if (err.err)
+        return err;
+    return RESULT_OK;
+}
+
+result filr_set_hide_dotfiles(filr_context *context, bool hide_dotfiles) {
+    context->view_config.hide_dotfiles = hide_dotfiles;
+
+    result err = filr_visible_update(context);
+    if (err.err)
+        return err;
+    return RESULT_OK;
 }
 
 result filr_create_file(filr_context  *context, cstr file_name) {
@@ -136,10 +189,12 @@ result filr_create_file(filr_context  *context, cstr file_name) {
 }
 
 result filr_rename_file(filr_context  *context, cstr new_file_name) {
-    if (context->file_index <= 1)
+    if (context->visible_index <= 1)
         return RESULT_ERR("WARN: filr_rename_file file index less than 2");
 
-    cstr old_file_name = *filr_get_name(context, context->file_index);
+    size_t file_index = context->files_visible.files[context->visible_index].all_files_index;
+
+    cstr old_file_name = *filr_get_name_all(context, file_index);
     cstr old_file_path;
     cstr_init(&old_file_path, 0);
     cstr_concat(&old_file_path, 3, context->directory, CSTR_DASH, old_file_name);
@@ -155,10 +210,12 @@ result filr_rename_file(filr_context  *context, cstr new_file_name) {
 }
 
 result filr_delete_file(filr_context *context) {
-    if (context->file_index <= 1)
+    if (context->visible_index <= 1)
         return RESULT_ERR("WARN: filr_delete_file file index less than 2");
 
-    cstr file = *filr_get_name(context, context->file_index);
+    size_t file_index = context->files_visible.files[context->visible_index].all_files_index;
+
+    cstr file = *filr_get_name_all(context, file_index);
     cstr file_path;
     cstr_init(&file_path, 0);
     cstr_concat(&file_path, 3, context->directory, CSTR_DASH, file);
@@ -168,48 +225,32 @@ result filr_delete_file(filr_context *context) {
     return (err) ? RESULT_OK : RESULT_ERR("ERR: filr_delete_file failed delete");
 }
 
-size_t filr_find_next_index(filr_context *context, int range, int step) {
-    size_t ix = context->file_index + step;
-    for (int ctr = 0; ix >= 0 && ix < context->size && ctr < range; ctr++) {
-        while (ix >= 0 && ix < context->size && context->files[ix].is_dotfile) ix += step;
-    }
 
-    return ix;
-}
-
-void filr_reset(filr_context *context) {
-    context->size = 0;
-}
-
-void filr_move_index(filr_context *context, int di, bool skip_dotfiles) {
-    int new_index = (skip_dotfiles)? filr_find_next_index(context, (di > 0)? di : -di, (di > 0)? 1 : -1) : context->file_index + di;
+void filr_move_index(filr_context *context, int di) {
+    int new_index = (int)context->visible_index + di;
     
     if (new_index < 0) {
-        context->file_index = 0;
-    } else if (new_index >= context->size) {
-        context->file_index = context->size - 1;
+        context->visible_index = 0;
+    } else if (new_index >= context->files_visible.size) {
+        context->visible_index = context->files_visible.size - 1;
     } else {
-        context->file_index = new_index;
+        context->visible_index = new_index;
     }
 }
 
 void filr_move_index_filename(filr_context  *context, cstr filename) {
-    for (size_t i = 0; i < context->size; ++i) {
-        if (cstr_cmp(filr_get_name(context, i), &filename) == 0) {
-            context->file_index = i;
+    for (size_t i = 0; i < context->files_visible.size; ++i) {
+        if (cstr_cmp(filr_get_name_visible(context, i), &filename) == 0) {
+            context->visible_index = i;
             return;
         }
     }
 }
 
-void filr_reset_index(filr_context *context) {
-    context->file_index = 0;
-}
-
 
 result filr_action(filr_context *context) {
-    size_t ix = context->file_index;
-    filr_file file = context->files[ix];
+    size_t ix = context->files_visible.files[context->visible_index].all_files_index;
+    filr_file file = context->files_all.files[ix];
 
     if (file.is_directory) {
         return filr_goto_directory(context);
@@ -226,7 +267,10 @@ result filr_action(filr_context *context) {
 }
 
 result filr_goto_directory(filr_context* context) {
-    cstr goto_directory = *filr_get_name(context, context->file_index);
+    cstr goto_directory = *filr_get_name_visible(context, context->visible_index);
+
+    cstr old_path;
+    cstr_copy(&old_path, context->directory);
 
     if (strcmp(goto_directory.str, "..") == 0) {
         cstr tmp;
@@ -240,22 +284,23 @@ result filr_goto_directory(filr_context* context) {
         cstr_copy(&(context->directory), tmp);
     }
 
-    filr_reset(context);
-    return filr_load_directory(context);
-}
-
-cstr *filr_get_name(filr_context *context, size_t ix) {
-    return &context->files[ix].name;
-}
-
-
-void filr_print_array(filr_context *context) {
-    printf("size: %zu\n", context->size);
-    for (size_t i = 0; i < context->size; ++i) {
-        printf("i: %zu str size: %zu, is_dotfile: %d", i, context->files[i].name.size, context->files[i].is_dotfile);
-        printf("%s\n", filr_get_name(context, i)->str);
+    context->files_all.size = 0;
+    result err = filr_load_directory(context);
+    if (err.err) {
+        cstr_copy(&(context->directory), old_path);
+        return err;
     }
 
+    return RESULT_OK;
+}
+
+
+cstr *filr_get_name_visible(filr_context *context, size_t ix) {
+    return &context->files_visible.files[ix].name;
+}
+
+cstr *filr_get_name_all(filr_context *context, size_t ix) {
+    return &context->files_all.files[ix].name;
 }
 
 int filr_file_comparator_basic(const void *p1, const void *p2) {
@@ -317,12 +362,4 @@ int filr_file_comparator_alphabetic(const void *p1, const void *p2) {
     filr_file f2 = *((filr_file*)p2);
     
     return cstr_cmp(&f1.name, &f2.name);
-}
-
-size_t filr_count_dotfiles(filr_context *context, size_t ix) {
-    int ctr = 0;
-    for (size_t i = 0; i < ix; ++i) {
-        if (context->files[i].is_dotfile) ctr++;
-    }
-    return ctr;
 }

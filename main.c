@@ -10,18 +10,12 @@
 
 
 int main(void) {
-
-    filr_cmp_array cmp_array;
-    filr_init_cmp_array(&cmp_array);
-
     filr_context context = {0};
 
     result err;
     err = filr_init_context(&context);
 
     assert(!err.err);
-
-    qsort(&(context.files[2]), context.size - 2, sizeof(filr_file), cmp_array.array[cmp_array.ix]);
 
     inputs_t input = {0};
     inputs_init(&input);
@@ -45,7 +39,7 @@ int main(void) {
             view_view(&context, &view, &input, mouse_input_callback);
         EndDrawing();
         
-        handle_key_presses(&context, &view, &input, &cmp_array);
+        handle_key_presses(&context, &view, &input);
     }
 
     filr_free_context(&context);

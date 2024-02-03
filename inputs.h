@@ -28,7 +28,7 @@ typedef struct {
 
 void inputs_init(inputs_t *input);
 
-void handle_key_presses(filr_context *context, view_t *view, inputs_t *input, filr_cmp_array *cmp_array);
+void handle_key_presses(filr_context *context, view_t *view, inputs_t *input);
 
 void mouse_input_callback(const void *inputs_ptr, Rectangle rect, int ix);
 

@@ -203,29 +203,17 @@ void view_directory(filr_context *context, view_window *window, view_theme *them
         return;
 
     float ix_f = ceilf(window->camera.y / window->text_size.y);
-    int draw_ix = (int)ix_f;
-    int file_ix = 0;
+    int ix = (int)ix_f;
 
-    if (window->hide_dotfiles) {
-        for (int ctr = 0; ctr < draw_ix; ++ctr, ++file_ix) {
-            while (file_ix + 1 < context->size && context->files[file_ix + 1].is_dotfile) file_ix++;
-        }
-    }
-
-    const float padding = 40.0;
+    const float padding = 40.0f;
     int max_text_width = (int) ((window->camera.width - padding) / theme->font.baseSize);
 
-    for (Vector2 position = get_position(draw_ix, window->text_size); 
-            position.y < window->camera.y + window->camera.height;
-            position.y += window->text_size.y) {
+    for (Vector2 position = get_position(ix, window->text_size);
+            position.y < window->camera.y + window->camera.height && ix < context->files_visible.size;
+            position.y += window->text_size.y, ++ix) {
 
-        if (window->hide_dotfiles) {
-            while (file_ix < context->size && context->files[file_ix].is_dotfile) file_ix++;
-        }
-        if (file_ix >= context->size)
-            break;
 
-        bool is_selected = context->file_index == file_ix;
+        bool is_selected = context->visible_index == ix;
 
         Rectangle row_rect = { .x = window->offset.x,
                                .y = window->offset.y + position.y - window->camera.y,
@@ -237,7 +225,7 @@ void view_directory(filr_context *context, view_window *window, view_theme *them
         Vector2 draw_icon_pos = {row_rect.x, row_rect.y};
         
 
-        DrawTextureV(get_file_icon(theme, context->files[file_ix]),
+        DrawTextureV(get_file_icon(theme, context->files_visible.files[ix]),
                      draw_icon_pos,
                      RAYWHITE);
 
@@ -245,9 +233,9 @@ void view_directory(filr_context *context, view_window *window, view_theme *them
         Vector2 draw_text_pos = {row_rect.x + padding, row_rect.y};
 
         cstr row_str;
-        get_row_str(&row_str, context->files[file_ix], max_text_width);
+        get_row_str(&row_str, context->files_visible.files[ix], max_text_width);
 
-        Color color = (context->files[file_ix].is_directory)? theme->dark: theme->light;
+        Color color = (context->files_visible.files[ix].is_directory)? theme->dark: theme->light;
         DrawTextEx(theme->font,
                    row_str.str,
                    draw_text_pos,
@@ -256,12 +244,10 @@ void view_directory(filr_context *context, view_window *window, view_theme *them
                    color);
 
 
-        mouse_input_callback(inputs_ptr, row_rect, file_ix);
-
-        file_ix++;
+        mouse_input_callback(inputs_ptr, row_rect, ix);
     }
 
-    view_scroll_bar(context, file_ix, window, theme);
+    view_scroll_bar(context, ix, window, theme);
 }
 
 void view_view(filr_context *context, view_t *view, const void *inputs_ptr, mouse_input_callback_t mouse_input_callback) {
@@ -328,9 +314,7 @@ void view_logger(view_window *window, view_theme *theme) {
 }
 
 void view_center_camera(filr_context *context, view_t *view) {
-    size_t ix = context->file_index;
-    if (view->window.hide_dotfiles)
-        ix -= filr_count_dotfiles(context, ix);
+    size_t ix = context->visible_index;
 
     Vector2 position = get_position(ix, view->window.text_size);
 
@@ -338,9 +322,7 @@ void view_center_camera(filr_context *context, view_t *view) {
 }
 
 void view_move_camera(filr_context *context, view_t *view) {
-    size_t ix = context->file_index;
-    if (view->window.hide_dotfiles)
-        ix -= filr_count_dotfiles(context, ix);
+    size_t ix = context->visible_index;
 
     Vector2 position = get_position(ix, view->window.text_size);
 
@@ -381,7 +363,7 @@ void view_set_logger_str(view_t *view, cstr str) {
 }
 
 void view_scroll_bar(filr_context *context, size_t ix, view_window *window, view_theme *theme) {
-    float height = ((float) ix) / (float) context->size;
+    float height = ((float) ix) / (float) context->files_visible.size;
     DrawRectangle(window->offset.x + window->camera.x + window->camera.width - 10, window->offset.y, 10, (int) (height * window->camera.height), theme->dark);
 }
 
