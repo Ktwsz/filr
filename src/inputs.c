@@ -3,13 +3,6 @@
 #include <math.h>
 #include <stdlib.h>
 
-void inputs_init(inputs_t *input) {
-    input->mouse_ix = -1;
-    input->scroll_pos = 0;
-    input->mode = INPUTS_NORMAL;    
-    input->scroll_frames_count = 0;
-    cstr_init(&input->input_str, 0);
-}
 
 #define BASE_ARGS filr_context *context, view_t *view
 #define INPUTS_ARGS filr_context *context, view_t *view, inputs_t *input
@@ -38,24 +31,45 @@ void inputs_init(inputs_t *input) {
 #define HANDLE_INPUT_MOUSE_SCROLL(...) mouse_scroll(__VA_ARGS__)
 #define HANDLE_INPUT_DOWN(input, ...) if (IsKeyDown(key_##input)) input(__VA_ARGS__)
 
+cstr LOGGER_NORMAL_MODE_PREFIX = { .str = "NORMAL |", .size = 8 };
+cstr LOGGER_CREATE_MODE_PREFIX = { .str = "CREATE |", .size = 8 };
+cstr LOGGER_RENAME_MODE_PREFIX = { .str = "RENAME |", .size = 8 };
+
+void logger_mode_changed(view_t *view, inputs_t *input);
+
+void inputs_init(inputs_t *input, view_t *view) {
+    input->mouse_ix = -1;
+    input->scroll_pos = 0;
+    input->mode = INPUTS_NORMAL;
+    input->scroll_frames_count = 0;
+    cstr_init(&input->input_str, 0);
+
+    logger_mode_changed(view, input);
+}
+
 
 void input_mode_cancel(INPUTS_ARGS);
 
-void logger_setup(INPUTS_ARGS, const char *message) {
-    cstr err_message;
-    cstr_init_name(&err_message, message);
-    view_set_logger_str(view, err_message);
-    view_show_logger(view);
+void logger_setup_err(INPUTS_ARGS, result err) {
+    view_logger_set_err(view, err);
     if (input->mode == INPUTS_RENAME || input->mode == INPUTS_CREATE)
         input_mode_cancel(context, view, input);
-    input->mode = INPUTS_LOGGER;
 }
 
-void logger_close(view_t *view, inputs_t *input) {
-    input->mode = INPUTS_NORMAL;
-    view_hide_logger(view);
+void logger_mode_changed(view_t *view, inputs_t *input) {
+    view_logger_clear_err(view);
+    switch (input->mode) {
+        case INPUTS_NORMAL:
+            view_window_set_str(&view->logger, LOGGER_NORMAL_MODE_PREFIX);
+            break;
+        case INPUTS_CREATE:
+            view_window_set_str(&view->logger, LOGGER_CREATE_MODE_PREFIX);
+            break;
+        case INPUTS_RENAME:
+            view_window_set_str(&view->logger, LOGGER_RENAME_MODE_PREFIX);
+            break;
+    }
 }
-
 
 void center_camera(BASE_ARGS) {
     view_center_camera(context, view);
@@ -75,7 +89,7 @@ void file_action(INPUTS_ARGS) {
     bool dir_change = context->files_visible.files[context->visible_index].is_directory;
     result err = filr_action(context);
     if (err.err) {
-        logger_setup(context, view, input, err.message);
+        logger_setup_err(context, view, input, err);
         return;
     }
 
@@ -128,7 +142,7 @@ void key_scroll_up(INPUTS_ARGS) {
 void change_file_sorting(INPUTS_ARGS) {
     result err = filr_next_sorting_ix(context);
     if (err.err)  {
-        logger_setup(context, view, input, err.message);
+        logger_setup_err(context, view, input, err);
         return;
     }
     context->visible_index = 0;
@@ -139,7 +153,7 @@ void view_dotfiles(INPUTS_ARGS) {
     view->window.hide_dotfiles = !view->window.hide_dotfiles;
     result err = filr_set_hide_dotfiles(context, view->window.hide_dotfiles);
     if (err.err)  {
-        logger_setup(context, view, input, err.message);
+        logger_setup_err(context, view, input, err);
         return;
     }
     context->visible_index = 0;
@@ -149,6 +163,7 @@ void view_dotfiles(INPUTS_ARGS) {
 void input_mode_start(INPUTS_ARGS, mode_enum mode) {
     input->mode = mode;
     view_show_input(view);
+    logger_mode_changed(view, input);
 }
 
 void create_start(INPUTS_ARGS) {//TODO: add directory
@@ -159,20 +174,21 @@ void input_mode_cancel(INPUTS_ARGS) {
     input->mode = INPUTS_NORMAL;
     view_hide_input(view);
     cstr_init(&input->input_str, 0);
+    logger_mode_changed(view, input);
 }
 
 void create_confirm(INPUTS_ARGS) {
     result create_err = filr_create_file(context, input->input_str);
 
     if (create_err.err) {
-        logger_setup(context, view, input, create_err.message);
+        logger_setup_err(context, view, input, create_err);
         return;
     }
 
     context->files_all.size = 0;
     result load_err = filr_load_directory(context);
     if (load_err.err) {
-        logger_setup(context, view, input, load_err.message);
+        logger_setup_err(context, view, input, load_err);
         return;
     }
 
@@ -184,21 +200,21 @@ void create_confirm(INPUTS_ARGS) {
 
 void input_mode_delete_last(view_t *view, inputs_t *input) {
     cstr_pop(&input->input_str);
-    view_set_input_str(view, input->input_str);
+    view_window_set_str(&view->input, input->input_str);
 }
 
 void delete_file(INPUTS_ARGS) {//TODO: delete directory
     result delete_err = filr_delete_file(context);
 
     if (delete_err.err) {
-        logger_setup(context, view, input, delete_err.message);
+        logger_setup_err(context, view, input, delete_err);
         return;
     }
 
     context->files_all.size = 0;
     result load_err = filr_load_directory(context);
     if (load_err.err) {
-        logger_setup(context, view, input, load_err.message);
+        logger_setup_err(context, view, input, load_err);
     }
 }
 
@@ -212,27 +228,27 @@ void input_mode_parse_key_queue(view_t *view, inputs_t *input) {
         key_pressed = GetCharPressed();
     }
 
-    view_set_input_str(view, input->input_str);
+    view_window_set_str(&view->input, input->input_str);
 }
 
 void rename_start(INPUTS_ARGS) {
     input_mode_start(context, view, input, INPUTS_RENAME);
 
     cstr_copy(&input->input_str, *filr_get_name_visible(context, context->visible_index));
-    view_set_input_str(view, input->input_str);
+    view_window_set_str(&view->input, input->input_str);
 }
 
 void rename_confirm(INPUTS_ARGS) {
     result rename_err = filr_rename_file(context, input->input_str);
     if (rename_err.err) {
-        logger_setup(context, view, input, rename_err.message);
+        logger_setup_err(context, view, input, rename_err);
         return;
     }
 
     context->files_all.size = 0;
     result load_err = filr_load_directory(context);
     if (load_err.err) {
-        logger_setup(context, view, input, load_err.message);
+        logger_setup_err(context, view, input, load_err);
         return;
     }
     filr_move_index_filename(context, input->input_str);
@@ -286,10 +302,6 @@ void handle_key_presses(ALL_ARGS) {
             HANDLE_INPUT(input_mode_cancel, context, view, input);
             HANDLE_INPUT(input_mode_delete_last, view, input);
             input_mode_parse_key_queue(view, input);
-            break;
-
-        case INPUTS_LOGGER:
-            HANDLE_INPUT(logger_close, view, input);
             break;
     }
 }

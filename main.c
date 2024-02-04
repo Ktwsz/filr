@@ -17,9 +17,6 @@ int main(void) {
 
     assert(!err.err);
 
-    inputs_t input = {0};
-    inputs_init(&input);
-
     SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_RESIZABLE);
 
     InitWindow(INIT_WINDOW_WIDTH, INIT_WINDOW_HEIGHT, "filr");
@@ -29,6 +26,9 @@ int main(void) {
     view_t view;
     err = view_init(&view, INIT_WINDOW_WIDTH, INIT_WINDOW_HEIGHT);
     assert(!err.err);
+
+    inputs_t input = {0};
+    inputs_init(&input, &view);
 
     while (!WindowShouldClose()) {
         view_handle_resize(&context, &view);

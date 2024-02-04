@@ -13,8 +13,7 @@
 typedef enum {
     INPUTS_NORMAL,
     INPUTS_CREATE,
-    INPUTS_RENAME,
-    INPUTS_LOGGER
+    INPUTS_RENAME
 } mode_enum;
 
 typedef struct {
@@ -26,7 +25,7 @@ typedef struct {
 } inputs_t;
 
 
-void inputs_init(inputs_t *input);
+void inputs_init(inputs_t *input, view_t *view);
 
 void handle_key_presses(filr_context *context, view_t *view, inputs_t *input);
 

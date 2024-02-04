@@ -9,9 +9,8 @@
                                   err = hash_map_insert(&theme->file_icons, #name, &t); \
                                   if (err.err) return err;
 
-#define LOGGER_WIDTH 600.0f
-#define LOGGER_HEIGHT 600.0f
-
+#define LOGGER_WIDTH_SMALL 140.0f
+//TODO: fix bug with tabular display
 
 cstr CSTR_SPACE = { .str = " ", .size = 1 };
 cstr CSTR_FILE = { .str = "file", .size = 4 };
@@ -26,7 +25,7 @@ Texture load_svg(const char *src, Vector2 size) {
 void view_set_size_window(view_window *window, int window_width, int window_height, view_window *input) {
     window->offset = (Vector2) {.x = 0.0f, .y = 40.0f};
     window->camera.width = (float)window_width - window->offset.x;
-    window->camera.height = (float)window_height - window->offset.y;
+    window->camera.height = (float)window_height - window->offset.y - 40;
     window->text_size = (Vector2) {.x = window->camera.width, .y = 30};
 
     if (input->show)
@@ -41,17 +40,17 @@ void view_set_size_header(view_window *header, int window_width, int window_heig
 }
 
 void view_set_size_input(view_window *input, int window_width, int window_height) {
-    input->offset = (Vector2) {.x = 0.0f, .y = (float)window_height - 30.0f};
+    input->offset = (Vector2) {.x = LOGGER_WIDTH_SMALL, .y = (float)window_height - 30.0f};
     input->camera.width = (float)window_width;
     input->camera.height = 30.0f;
-    input->text_size = (Vector2) {.x = input->camera.width, .y = input->camera.height};
+    input->text_size = (Vector2) {.x = input->camera.width - input->offset.x, .y = input->camera.height};
 }
 
 void view_set_size_logger(view_window *logger, int window_width, int window_height) {
-    float pos_x = ((float)window_width - LOGGER_WIDTH) / 2;
-    float pos_y = ((float)window_height - LOGGER_HEIGHT) / 2;
-
-    logger->offset = (Vector2) {.x = pos_x, .y = pos_y};
+    logger->offset = (Vector2) {.x = 0.0f, .y = (float)window_height - 30.0f};
+    logger->camera.width = LOGGER_WIDTH_SMALL;
+    logger->camera.height = 30.0f;
+    logger->text_size = (Vector2) {.x = logger->camera.width, .y = logger->camera.height};
 }
 
 result theme_init(view_theme *theme, Vector2 size) {
@@ -120,10 +119,8 @@ result view_init(view_t *view, int window_width, int window_height) {
     cstr_init(&view->input.str, 0);
 
     view->logger = (view_window){0};
-    view->logger.camera = (Rectangle) {.x = 0.0f, .y = 0.0f, .width = LOGGER_WIDTH, .height = LOGGER_HEIGHT};
-    view->logger.text_size = (Vector2) {.x = LOGGER_WIDTH, .y = LOGGER_HEIGHT};
     view_set_size_logger(&view->logger, window_width, window_height);
-    view->logger.show = false;
+    view->logger.show = true;
     cstr_init(&view->logger.str, 0);
 
 
@@ -179,24 +176,12 @@ void get_row_str(cstr *row, filr_file file, int name_cap) {
 
 void view_show_input(view_t *view) {
     view->input.show = true;
-    view->window.camera.height -= view->input.camera.height;
 }
 
 void view_hide_input(view_t *view) {
     view->input.show = false;
     cstr_init(&view->input.str, 0);
-    view->window.camera.height += view->input.camera.height;
 }
-
-void view_show_logger(view_t *view) {
-    view->logger.show = true;
-}
-
-void view_hide_logger(view_t *view) {
-    view->logger.show = false;
-    cstr_init(&view->logger.str, 0);
-}
-
 
 void view_directory(filr_context *context, view_window *window, view_theme *theme, const void *inputs_ptr, mouse_input_callback_t mouse_input_callback) {
     if (!window->show)
@@ -307,8 +292,8 @@ void view_logger(view_window *window, view_theme *theme) {
     DrawRectangleRec(logger_rect, theme->passive);
     DrawTextEx(theme->font,//TODO: this also perhaps
                window->str.str,
-               (Vector2){window->offset.x, window->offset.y + window->camera.height / 2},
-               (float)theme->font.baseSize / 1.5f,
+               (Vector2){logger_rect.x, logger_rect.y},
+               (float)theme->font.baseSize,
                2,
                theme->light);
 }
@@ -354,12 +339,19 @@ void view_handle_resize(filr_context *context, view_t *view) {
     view_center_camera(context, view);
 }
 
-void view_set_input_str(view_t *view, cstr str) {
-    cstr_copy(&view->input.str, str);
+void view_window_set_str(view_window *window, cstr str) {
+    cstr_copy(&window->str, str);
 }
 
-void view_set_logger_str(view_t *view, cstr str) {
-    cstr_copy(&view->logger.str, str);
+
+void view_logger_set_err(view_t *view, result err) {
+    view->logger.camera.width = view->size.width;
+
+    cstr_init_name(&view->logger.str, err.message);
+}
+
+void view_logger_clear_err(view_t *view) {
+    view->logger.camera.width = LOGGER_WIDTH_SMALL;
 }
 
 void view_scroll_bar(filr_context *context, size_t ix, view_window *window, view_theme *theme) {

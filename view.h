@@ -44,17 +44,15 @@ void view_header(filr_context *context, view_window *window, view_theme *theme);
 
 void view_logger(view_window *window, view_theme *theme);
 
-void view_show_logger(view_t *view);
-
-void view_hide_logger(view_t *view);
-
 void view_show_input(view_t *view);
 
 void view_hide_input(view_t *view);
 
-void view_set_input_str(view_t *view, cstr str);
+void view_window_set_str(view_window *window, cstr str);
 
-void view_set_logger_str(view_t *view, cstr str);
+void view_logger_set_err(view_t *view, result err);
+
+void view_logger_clear_err(view_t *view);
 
 void view_input(view_window *window, view_theme *theme);
 
