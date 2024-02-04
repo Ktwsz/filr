@@ -106,6 +106,7 @@ void mouse_left_click(INPUTS_ARGS) {
 }
 
 
+//TODO: scroll jumps by 2 files
 void scroll(INPUTS_ARGS, float scroll_move) {
     input->scroll_pos += (scroll_move > SCROLL_SPEED_CAP)? SCROLL_SPEED_CAP : scroll_move;
     if (fabs(input->scroll_pos) > SCROLL_STEP) {

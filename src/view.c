@@ -10,7 +10,7 @@
                                   if (err.err) return err;
 
 #define LOGGER_WIDTH_SMALL 140.0f
-//TODO: fix bug with tabular display
+#define SCROLL_BAR_WIDTH 10.0f
 
 cstr CSTR_SPACE = { .str = " ", .size = 1 };
 cstr CSTR_FILE = { .str = "file", .size = 4 };
@@ -156,22 +156,46 @@ Texture get_file_icon(view_theme *theme, filr_file file) {
     return *t;
 }
 
-
-void get_row_str(cstr *row, filr_file file, int name_cap) {
+void write_row_data(cstr *dst, filr_file file, int name_cap) {
     cstr file_capped, file_size, date;
     cstr_cap(&file_capped, file.name, name_cap);
     cstr_parse_file_size(&file_size, file.size);
     cstr_parse_date(&date, file.last_edit_date.day,
-                           file.last_edit_date.month,
-                           file.last_edit_date.year,
-                           file.last_edit_date.hour,
-                           file.last_edit_date.minute);
+                    file.last_edit_date.month,
+                    file.last_edit_date.year,
+                    file.last_edit_date.hour,
+                    file.last_edit_date.minute);
 
-    cstr_concat(row,
+    cstr_concat(dst,
                 5,
                 file_capped, CSTR_SPACE,
                 file_size, CSTR_SPACE,
                 date);
+}
+
+
+float get_row_str_size(view_theme *theme, filr_file file, int name_cap) {
+    cstr row;
+    write_row_data(&row, file, name_cap);
+
+    Vector2 row_size = MeasureTextEx(theme->font, row.str, (float)theme->font.baseSize, 2);
+    return row_size.x;
+}
+
+int get_row_str_cap(float camera_width, view_theme *theme, filr_file file) {
+    int l = -1, r = MAX_STR_LEN;
+
+    while (r - l > 1) {
+        int m = (l + r) / 2;
+
+        float text_width = get_row_str_size(theme, file, m);
+        if (text_width > camera_width) {
+            r = m;
+        } else {
+            l = m;
+        }
+    }
+    return l;
 }
 
 void view_show_input(view_t *view) {
@@ -191,7 +215,9 @@ void view_directory(filr_context *context, view_window *window, view_theme *them
     int ix = (int)ix_f;
 
     const float padding = 40.0f;
-    int max_text_width = (int) ((window->camera.width - padding) / theme->font.baseSize);
+
+    float icon_size = window->text_size.y;
+    int row_cap = get_row_str_cap(window->text_size.x - SCROLL_BAR_WIDTH - icon_size - padding, theme, context->files_visible.files[0]);
 
     for (Vector2 position = get_position(ix, window->text_size);
             position.y < window->camera.y + window->camera.height && ix < context->files_visible.size;
@@ -202,7 +228,7 @@ void view_directory(filr_context *context, view_window *window, view_theme *them
 
         Rectangle row_rect = { .x = window->offset.x,
                                .y = window->offset.y + position.y - window->camera.y,
-                               .width = window->text_size.x,
+                               .width = window->text_size.x - SCROLL_BAR_WIDTH,
                                .height = window->text_size.y };
 
         if (is_selected) DrawRectangleRec(row_rect, theme->passive);
@@ -218,7 +244,7 @@ void view_directory(filr_context *context, view_window *window, view_theme *them
         Vector2 draw_text_pos = {row_rect.x + padding, row_rect.y};
 
         cstr row_str;
-        get_row_str(&row_str, context->files_visible.files[ix], max_text_width);
+        write_row_data(&row_str, context->files_visible.files[ix], row_cap);
 
         Color color = (context->files_visible.files[ix].is_directory)? theme->dark: theme->light;
         DrawTextEx(theme->font,
@@ -356,7 +382,7 @@ void view_logger_clear_err(view_t *view) {
 
 void view_scroll_bar(filr_context *context, size_t ix, view_window *window, view_theme *theme) {
     float height = ((float) ix) / (float) context->files_visible.size;
-    DrawRectangle(window->offset.x + window->camera.x + window->camera.width - 10, window->offset.y, 10, (int) (height * window->camera.height), theme->dark);
+    DrawRectangle(window->offset.x + window->camera.x + window->camera.width - SCROLL_BAR_WIDTH, window->offset.y, SCROLL_BAR_WIDTH, (int) (height * window->camera.height), theme->dark);
 }
 
 void view_theme_free(view_theme *theme) {
