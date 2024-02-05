@@ -66,6 +66,8 @@ result filr_set_hide_dotfiles(filr_context *context, bool hide_dotfiles);
 
 result filr_create_file(filr_context  *context, cstr file_name);
 
+result filr_create_directory(filr_context  *context, cstr file_name);
+
 result filr_rename_file(filr_context  *context, cstr file_name);
 
 result filr_delete_file(filr_context *context);

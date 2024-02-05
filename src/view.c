@@ -9,8 +9,9 @@
                                   err = hash_map_insert(&theme->file_icons, #name, &t); \
                                   if (err.err) return err;
 
-#define LOGGER_WIDTH_SMALL 140.0f
+#define LOGGER_WIDTH_SMALL 160.0f
 #define SCROLL_BAR_WIDTH 10.0f
+#define WINDOW_PADDING_V 5.0f
 
 cstr CSTR_SPACE = { .str = " ", .size = 1 };
 cstr CSTR_FILE = { .str = "file", .size = 4 };
@@ -144,8 +145,8 @@ int max(int a, int b) {
     return (a > b)? a : b;
 }
 
-Vector2 get_position(size_t ix, Vector2 text_size) {
-    return (Vector2){0, (float)ix * text_size.y};
+Vector2 get_position(size_t ix, Vector2 text_size, float padding_h) {
+    return (Vector2){0, (float)ix * (padding_h + text_size.y)};
 }
 
 Texture get_file_icon(view_theme *theme, filr_file file) {
@@ -211,7 +212,7 @@ void view_directory(filr_context *context, view_window *window, view_theme *them
     if (!window->show)
         return;
 
-    float ix_f = ceilf(window->camera.y / window->text_size.y);
+    float ix_f = floorf(window->camera.y / (window->text_size.y + WINDOW_PADDING_V));
     int ix = (int)ix_f;
 
     const float padding = 40.0f;
@@ -219,9 +220,9 @@ void view_directory(filr_context *context, view_window *window, view_theme *them
     float icon_size = window->text_size.y;
     int row_cap = get_row_str_cap(window->text_size.x - SCROLL_BAR_WIDTH - icon_size - padding, theme, context->files_visible.files[0]);
 
-    for (Vector2 position = get_position(ix, window->text_size);
+    for (Vector2 position = get_position(ix, window->text_size, WINDOW_PADDING_V);
             position.y < window->camera.y + window->camera.height && ix < context->files_visible.size;
-            position.y += window->text_size.y, ++ix) {
+            position.y += window->text_size.y + WINDOW_PADDING_V, ++ix) {
 
 
         bool is_selected = context->visible_index == ix;
@@ -327,7 +328,7 @@ void view_logger(view_window *window, view_theme *theme) {
 void view_center_camera(filr_context *context, view_t *view) {
     size_t ix = context->visible_index;
 
-    Vector2 position = get_position(ix, view->window.text_size);
+    Vector2 position = get_position(ix, view->window.text_size, WINDOW_PADDING_V);
 
     view->window.camera.y = max(0, position.y + (view->window.text_size.y - view->window.camera.height)/2);
 }
@@ -335,7 +336,7 @@ void view_center_camera(filr_context *context, view_t *view) {
 void view_move_camera(filr_context *context, view_t *view) {
     size_t ix = context->visible_index;
 
-    Vector2 position = get_position(ix, view->window.text_size);
+    Vector2 position = get_position(ix, view->window.text_size, WINDOW_PADDING_V);
 
     if (position.y < view->window.camera.y)
         view->window.camera.y = position.y;

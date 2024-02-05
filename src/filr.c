@@ -7,6 +7,7 @@
 #define assert_return(expr) if (!(expr)) return
 
 cstr CSTR_DASH = { .str = "\\", .size = 1 };
+cstr CSTR_TRASH_DIR = { .str = "filr_trash", .size = 10 };
 
 result filr_file_array_append(filr_array *array, filr_file* new_elem) {
     array->size++;
@@ -93,6 +94,7 @@ result filr_load_directory(filr_context *context) {
     return RESULT_OK;
 }
 
+
 result filr_init_context(filr_context *context) {
     filr_init_cmp_array(context->cmp_array);
 
@@ -105,6 +107,8 @@ result filr_init_context(filr_context *context) {
     char *HOME = getenv("HOMEPATH");
     printf("%s\n", HOME);
     cstr_init_name(&(context->directory), HOME);
+
+    filr_create_directory(context, CSTR_TRASH_DIR);
     
     result load_err = filr_load_directory(context);
     if (load_err.err)
@@ -220,9 +224,34 @@ result filr_delete_file(filr_context *context) {
     cstr_init(&file_path, 0);
     cstr_concat(&file_path, 3, context->directory, CSTR_DASH, file);
 
-    bool err = DeleteFile(file_path.str);
+    char *HOME = getenv("HOMEPATH");
+    cstr home;
+    cstr_init_name(&home, HOME);
+
+    cstr trash_file_path;
+    cstr_concat(&trash_file_path, 5, home, CSTR_DASH, CSTR_TRASH_DIR, CSTR_DASH, file);
+
+    bool err = MoveFile(file_path.str,
+                        trash_file_path.str);
 
     return (err) ? RESULT_OK : RESULT_ERR("ERR: filr_delete_file failed delete");
+}
+
+bool directory_exists(cstr dir) {
+    DWORD dwAttrib = GetFileAttributes(dir.str);
+
+    return (dwAttrib != INVALID_FILE_ATTRIBUTES && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+}
+
+result filr_create_directory(filr_context *context, cstr file_name) {
+    cstr new_directory;
+    cstr_concat(&new_directory, 3, context->directory, CSTR_DASH, file_name);
+
+    if (directory_exists(new_directory))
+        return RESULT_OK;
+
+    bool err = CreateDirectory(new_directory.str, NULL);
+    return (err) ? RESULT_OK : RESULT_ERR("ERR: filr_create_directory failed ");
 }
 
 
