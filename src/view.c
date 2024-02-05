@@ -2,7 +2,7 @@
 
 #include <math.h>
 
-#include "../resources/theme_blue.h"
+#include "../config/theme_blue.h"
 //#include "../resources/theme_pink.h"
 
 #define LOAD_SVG(name, file_name) t = load_svg(file_name##_icon_dir, size); \

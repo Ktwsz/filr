@@ -2,30 +2,13 @@
 
 #include <math.h>
 #include <stdlib.h>
+#include "../config/inputs.h"
 
 
 #define BASE_ARGS filr_context *context, view_t *view
 #define INPUTS_ARGS filr_context *context, view_t *view, inputs_t *input
 #define ALL_ARGS filr_context *context, view_t *view, inputs_t *input
 
-#define key_center_camera KEY_Z
-#define key_move_one_down KEY_DOWN
-#define key_move_one_up KEY_UP
-#define key_file_action KEY_ENTER
-#define key_mouse_left_click MOUSE_BUTTON_LEFT
-#define key_key_scroll_down KEY_DOWN
-#define key_key_scroll_up KEY_UP
-#define key_change_file_sorting KEY_S
-#define key_view_dotfiles KEY_PERIOD
-#define key_create_file_start KEY_T
-#define key_create_file_confirm KEY_ENTER
-#define key_create_dir_confirm KEY_ENTER
-#define key_delete_file KEY_D
-#define key_rename_start KEY_R
-#define key_rename_confirm KEY_ENTER
-#define key_input_mode_cancel KEY_C
-#define key_input_mode_delete_last KEY_BACKSPACE
-#define key_create_directory_start KEY_D
 
 #define HANDLE_INPUT(input, ...) if (!IsKeyDown(KEY_LEFT_SHIFT) && !IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(key_##input)) input(__VA_ARGS__)
 #define HANDLE_INPUT_SHIFT(input, ...) if (IsKeyDown(KEY_LEFT_SHIFT) && !IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(key_##input)) input(__VA_ARGS__)
@@ -113,7 +96,6 @@ void mouse_left_click(INPUTS_ARGS) {
 }
 
 
-//TODO: scroll jumps by 2 files
 void scroll(INPUTS_ARGS, float scroll_move) {
     input->scroll_pos += (scroll_move > SCROLL_SPEED_CAP)? SCROLL_SPEED_CAP : scroll_move;
     if (fabs(input->scroll_pos) > SCROLL_STEP) {
@@ -210,7 +192,7 @@ void create_file_confirm(INPUTS_ARGS) {
     input_mode_cancel(context, view, input);
 }
 
-void create_dir_confirm(INPUTS_ARGS) {
+void create_directory_confirm(INPUTS_ARGS) {
     result create_err = filr_create_directory(context, input->input_str);
 
     if (create_err.err) {
@@ -333,7 +315,7 @@ void handle_key_presses(ALL_ARGS) {
             break;
 
         case INPUTS_CREATE_DIRECTORY:
-            HANDLE_INPUT(create_dir_confirm, context, view, input);
+            HANDLE_INPUT(create_directory_confirm, context, view, input);
             HANDLE_INPUT_CTRL(input_mode_cancel, context, view, input);
             HANDLE_INPUT(input_mode_delete_last, view, input);
             input_mode_parse_key_queue(view, input);
