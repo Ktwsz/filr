@@ -337,10 +337,10 @@ int filr_file_comparator_basic(const void *p1, const void *p2) {
     filr_file f2 = *((filr_file*)p2);
 
     if (f1.is_directory == f2.is_directory)
-        return cstr_cmp(&f1.name, &f2.name);
+        return cstr_cmp_alphabetic(&f1.name, &f2.name);
 
-    if (f1.is_directory) return 1;
-    return -1;
+    if (f1.is_directory) return -1;
+    return 1;
 }
 
 int filr_file_comparator_size(const void *p1, const void *p2) {

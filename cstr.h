@@ -17,6 +17,8 @@ void cstr_init_name(cstr *dst, const char *src);
 
 int cstr_cmp(const void *a, const void *b);
 
+int cstr_cmp_alphabetic(const void *a, const void *b);
+
 void cstr_copy(cstr *dst, cstr src);
 
 void cstr_concat(cstr *dst, int count, ...);

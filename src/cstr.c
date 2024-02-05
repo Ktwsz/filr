@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
+#include <stdbool.h>
 
 #define HASH_P 53
 #define HASH_M 1000000009
@@ -28,6 +29,49 @@ int cstr_cmp(const void *a, const void *b) {
 
     if (val1.size != val2.size) return (val1.size < val2.size) ? -1 : 1;
     return strcmp(val1.str, val2.str);
+}
+
+bool cstr_char_is_digit(char c) {
+    return c >= '0' && c <= '9';
+}
+
+bool cstr_char_is_lowercase(char c) {
+    return c >= 'a' && c <= 'z';
+}
+
+bool cstr_char_is_uppercase(char c) {
+    return c >= 'A' && c <= 'Z';
+}
+
+int cstr_char_get_priority(char c) {
+    if (cstr_char_is_digit(c)) return 0;
+    if (cstr_char_is_lowercase(c)) return 1;
+    if (cstr_char_is_uppercase(c)) return 2;
+    return 3;
+}
+
+int cstr_char_cmp(char c1, char c2) {
+    int p1 = cstr_char_get_priority(c1);
+    int p2 = cstr_char_get_priority(c2);
+
+    if (p1 != p2)
+        return p1 - p2;
+
+    return c1 - c2;
+}
+
+int cstr_cmp_alphabetic(const void *a, const void *b) {
+    cstr val1 = *(cstr*)a;
+    cstr val2 = *(cstr*)b;
+
+    size_t n = (val1.size < val2.size)? val1.size : val2.size;
+    for (size_t i = 0; i < n; ++i) {
+        int val = cstr_char_cmp(val1.str[i], val2.str[i]);
+        if (val != 0)
+            return val;
+    }
+
+    return (int)(val1.size - val2.size);
 }
 
 void cstr_copy(cstr *dst, cstr src) {
