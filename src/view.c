@@ -12,6 +12,7 @@
 #define LOGGER_WIDTH_SMALL 160.0f
 #define SCROLL_BAR_WIDTH 10.0f
 #define WINDOW_PADDING_V 5.0f
+#define ICON_PADDING 40.0f
 
 cstr CSTR_SPACE = { .str = " ", .size = 1 };
 cstr CSTR_FILE = { .str = "file", .size = 4 };
@@ -97,6 +98,8 @@ result theme_init(view_theme *theme, Vector2 size) {
     return RESULT_OK;
 }
 
+int get_row_str_cap(float camera_width, view_theme *theme);
+
 result view_init(view_t *view, int window_width, int window_height) {
     view->size = (Rectangle) {.x = 0.0f, .y = 0.0f, .width = (float)window_width, .height = (float)window_height};
 
@@ -126,7 +129,13 @@ result view_init(view_t *view, int window_width, int window_height) {
 
 
     result err = theme_init(&view->theme, view->window.text_size);
-    return err;
+    if (err.err)
+        return err;
+
+    float icon_size = view->window.text_size.y;
+    view->file_display_row_cap = get_row_str_cap(view->window.text_size.x - SCROLL_BAR_WIDTH - icon_size - ICON_PADDING, &view->theme);
+
+    return RESULT_OK;
 
 }
 
@@ -175,21 +184,24 @@ void write_row_data(cstr *dst, filr_file file, int name_cap) {
 }
 
 
-float get_row_str_size(view_theme *theme, filr_file file, int name_cap) {
+float get_row_str_size(view_theme *theme, int name_cap) {
+    filr_file dummy_file;
+    filr_create_dummy_file(&dummy_file);
+
     cstr row;
-    write_row_data(&row, file, name_cap);
+    write_row_data(&row, dummy_file, name_cap);
 
     Vector2 row_size = MeasureTextEx(theme->font, row.str, (float)theme->font.baseSize, 2);
     return row_size.x;
 }
 
-int get_row_str_cap(float camera_width, view_theme *theme, filr_file file) {
+int get_row_str_cap(float camera_width, view_theme *theme) {
     int l = -1, r = MAX_STR_LEN;
 
     while (r - l > 1) {
         int m = (l + r) / 2;
 
-        float text_width = get_row_str_size(theme, file, m);
+        float text_width = get_row_str_size(theme, m);
         if (text_width > camera_width) {
             r = m;
         } else {
@@ -208,17 +220,12 @@ void view_hide_input(view_t *view) {
     cstr_init(&view->input.str, 0);
 }
 
-void view_directory(filr_context *context, view_window *window, view_theme *theme, const void *inputs_ptr, mouse_input_callback_t mouse_input_callback) {
+void view_directory(filr_context *context, view_window *window, view_theme *theme, const void *inputs_ptr, mouse_input_callback_t mouse_input_callback, int row_cap) {
     if (!window->show)
         return;
 
     float ix_f = floorf(window->camera.y / (window->text_size.y + WINDOW_PADDING_V));
     int ix = (int)ix_f;
-
-    const float padding = 40.0f;
-
-    float icon_size = window->text_size.y;
-    int row_cap = get_row_str_cap(window->text_size.x - SCROLL_BAR_WIDTH - icon_size - padding, theme, context->files_visible.files[0]);
 
     for (Vector2 position = get_position(ix, window->text_size, WINDOW_PADDING_V);
             position.y < window->camera.y + window->camera.height && ix < context->files_visible.size;
@@ -242,7 +249,7 @@ void view_directory(filr_context *context, view_window *window, view_theme *them
                      RAYWHITE);
 
 
-        Vector2 draw_text_pos = {row_rect.x + padding, row_rect.y};
+        Vector2 draw_text_pos = {row_rect.x + ICON_PADDING, row_rect.y};
 
         cstr row_str;
         write_row_data(&row_str, context->files_visible.files[ix], row_cap);
@@ -264,7 +271,7 @@ void view_directory(filr_context *context, view_window *window, view_theme *them
 
 void view_view(filr_context *context, view_t *view, const void *inputs_ptr, mouse_input_callback_t mouse_input_callback) {
     view_header(context, &view->header, &view->theme);
-    view_directory(context, &view->window, &view->theme, inputs_ptr, mouse_input_callback);
+    view_directory(context, &view->window, &view->theme, inputs_ptr, mouse_input_callback, view->file_display_row_cap);
 
     view_input(&view->input, &view->theme);
     view_logger(&view->logger, &view->theme);
@@ -362,6 +369,9 @@ void view_handle_resize(filr_context *context, view_t *view) {
     view_set_size_input(&view->input, window_width, window_height);
 
     view_set_size_logger(&view->logger, window_width, window_height);
+
+    float icon_size = view->window.text_size.y;
+    view->file_display_row_cap = get_row_str_cap(view->window.text_size.x - SCROLL_BAR_WIDTH - icon_size - ICON_PADDING, &view->theme);
 
     view_center_camera(context, view);
 }

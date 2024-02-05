@@ -272,6 +272,13 @@ void rename_confirm(INPUTS_ARGS) {
     input_mode_cancel(context, view, input);
 }
 
+void open_windows_explorer(INPUTS_ARGS) {
+    result err = filr_open_windows_explorer(context);
+
+    if (err.err)
+        logger_setup_err(context, view, input, err);
+}
+
 void handle_key_presses(ALL_ARGS) {
     switch (input->mode) {
         case INPUTS_NORMAL:
@@ -292,6 +299,8 @@ void handle_key_presses(ALL_ARGS) {
             HANDLE_INPUT(delete_file, context, view, input);
 
             HANDLE_INPUT(rename_start, context, view, input);
+
+            HANDLE_INPUT(open_windows_explorer, context, view, input);
 
             HANDLE_INPUT_SHIFT(create_directory_start, context, view, input);
 

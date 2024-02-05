@@ -105,7 +105,6 @@ result filr_init_context(filr_context *context) {
     context->view_config.hide_dotfiles = true;
 
     char *HOME = getenv("HOMEPATH");
-    printf("%s\n", HOME);
     cstr_init_name(&(context->directory), HOME);
 
     filr_create_directory(context, CSTR_TRASH_DIR);
@@ -254,6 +253,9 @@ result filr_create_directory(filr_context *context, cstr file_name) {
     return (err) ? RESULT_OK : RESULT_ERR("ERR: filr_create_directory failed ");
 }
 
+result filr_open_windows_explorer(filr_context *context) {
+    //TODO: thought this would be easier https://stackoverflow.com/questions/31563579/execute-command-using-win32
+}
 
 void filr_move_index(filr_context *context, int di) {
     int new_index = (int)context->visible_index + di;
@@ -330,6 +332,17 @@ cstr *filr_get_name_visible(filr_context *context, size_t ix) {
 
 cstr *filr_get_name_all(filr_context *context, size_t ix) {
     return &context->files_all.files[ix].name;
+}
+
+void filr_create_dummy_file(filr_file *dst) {
+    cstr_init_name(&dst->name, "siala baba mak");
+    dst->is_directory = false;
+    dst->size = 6900;
+    dst->last_edit_date.month = 4;
+    dst->last_edit_date.day = 20;
+    dst->last_edit_date.year = 2137;
+    dst->last_edit_date.hour = 4;
+    dst->last_edit_date.minute = 20;
 }
 
 int filr_file_comparator_basic(const void *p1, const void *p2) {

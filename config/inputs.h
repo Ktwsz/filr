@@ -14,6 +14,7 @@
     #define key_key_scroll_down KEY_DOWN
     #define key_key_scroll_up KEY_UP
     #define key_delete_file KEY_D
+    #define key_open_windows_explorer KEY_E
 // Normal mode
 
 // View change bindings

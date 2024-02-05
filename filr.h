@@ -72,6 +72,8 @@ result filr_rename_file(filr_context  *context, cstr file_name);
 
 result filr_delete_file(filr_context *context);
 
+result filr_open_windows_explorer(filr_context *context);
+
 void filr_move_index(filr_context *context, int di);
 
 void filr_move_index_filename(filr_context  *context, cstr filename);
@@ -83,6 +85,8 @@ result filr_goto_directory(filr_context *context);
 cstr *filr_get_name_visible(filr_context *context, size_t ix);
 
 cstr *filr_get_name_all(filr_context *context, size_t ix);
+
+void filr_create_dummy_file(filr_file *dst);
 
 int filr_file_comparator_basic(const void *p1, const void *p2);
 
