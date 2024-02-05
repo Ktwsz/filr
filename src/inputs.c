@@ -17,22 +17,26 @@
 #define key_key_scroll_up KEY_UP
 #define key_change_file_sorting KEY_S
 #define key_view_dotfiles KEY_PERIOD
-#define key_create_start KEY_T
-#define key_create_confirm KEY_ENTER
+#define key_create_file_start KEY_T
+#define key_create_file_confirm KEY_ENTER
+#define key_create_dir_confirm KEY_ENTER
 #define key_delete_file KEY_D
 #define key_rename_start KEY_R
 #define key_rename_confirm KEY_ENTER
-#define key_input_mode_cancel KEY_LEFT_SHIFT
+#define key_input_mode_cancel KEY_C
 #define key_input_mode_delete_last KEY_BACKSPACE
-#define key_logger_close KEY_LEFT_SHIFT
+#define key_create_directory_start KEY_D
 
-#define HANDLE_INPUT(input, ...) if (IsKeyPressed(key_##input)) input(__VA_ARGS__)
+#define HANDLE_INPUT(input, ...) if (!IsKeyDown(KEY_LEFT_SHIFT) && !IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(key_##input)) input(__VA_ARGS__)
+#define HANDLE_INPUT_SHIFT(input, ...) if (IsKeyDown(KEY_LEFT_SHIFT) && !IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(key_##input)) input(__VA_ARGS__)
+#define HANDLE_INPUT_CTRL(input, ...) if (!IsKeyDown(KEY_LEFT_SHIFT) && IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(key_##input)) input(__VA_ARGS__)
 #define HANDLE_INPUT_MOUSE(input, ...) if (IsMouseButtonPressed(key_##input)) input(__VA_ARGS__)
 #define HANDLE_INPUT_MOUSE_SCROLL(...) mouse_scroll(__VA_ARGS__)
 #define HANDLE_INPUT_DOWN(input, ...) if (IsKeyDown(key_##input)) input(__VA_ARGS__)
 
 cstr LOGGER_NORMAL_MODE_PREFIX = { .str = "NORMAL |", .size = 8 };
-cstr LOGGER_CREATE_MODE_PREFIX = { .str = "CREATE |", .size = 8 };
+cstr LOGGER_CREATE_FILE_MODE_PREFIX = { .str = "FILE   |", .size = 8 };
+cstr LOGGER_CREATE_DIR_MODE_PREFIX = { .str = "DIR    |", .size = 8 };
 cstr LOGGER_RENAME_MODE_PREFIX = { .str = "RENAME |", .size = 8 };
 
 void logger_mode_changed(view_t *view, inputs_t *input);
@@ -52,7 +56,7 @@ void input_mode_cancel(INPUTS_ARGS);
 
 void logger_setup_err(INPUTS_ARGS, result err) {
     view_logger_set_err(view, err);
-    if (input->mode == INPUTS_RENAME || input->mode == INPUTS_CREATE)
+    if (input->mode == INPUTS_RENAME || input->mode == INPUTS_CREATE_FILE || input->mode == INPUTS_CREATE_DIRECTORY)
         input_mode_cancel(context, view, input);
 }
 
@@ -62,8 +66,11 @@ void logger_mode_changed(view_t *view, inputs_t *input) {
         case INPUTS_NORMAL:
             view_window_set_str(&view->logger, LOGGER_NORMAL_MODE_PREFIX);
             break;
-        case INPUTS_CREATE:
-            view_window_set_str(&view->logger, LOGGER_CREATE_MODE_PREFIX);
+        case INPUTS_CREATE_FILE:
+            view_window_set_str(&view->logger, LOGGER_CREATE_FILE_MODE_PREFIX);
+            break;
+        case INPUTS_CREATE_DIRECTORY:
+            view_window_set_str(&view->logger, LOGGER_CREATE_DIR_MODE_PREFIX);
             break;
         case INPUTS_RENAME:
             view_window_set_str(&view->logger, LOGGER_RENAME_MODE_PREFIX);
@@ -167,8 +174,12 @@ void input_mode_start(INPUTS_ARGS, mode_enum mode) {
     logger_mode_changed(view, input);
 }
 
-void create_start(INPUTS_ARGS) {//TODO: add directory
-    input_mode_start(context, view, input, INPUTS_CREATE);
+void create_file_start(INPUTS_ARGS) {
+    input_mode_start(context, view, input, INPUTS_CREATE_FILE);
+}
+
+void create_directory_start(INPUTS_ARGS) {
+    input_mode_start(context, view, input, INPUTS_CREATE_DIRECTORY);
 }
 
 void input_mode_cancel(INPUTS_ARGS) {
@@ -178,8 +189,29 @@ void input_mode_cancel(INPUTS_ARGS) {
     logger_mode_changed(view, input);
 }
 
-void create_confirm(INPUTS_ARGS) {
+void create_file_confirm(INPUTS_ARGS) {
     result create_err = filr_create_file(context, input->input_str);
+
+    if (create_err.err) {
+        logger_setup_err(context, view, input, create_err);
+        return;
+    }
+
+    context->files_all.size = 0;
+    result load_err = filr_load_directory(context);
+    if (load_err.err) {
+        logger_setup_err(context, view, input, load_err);
+        return;
+    }
+
+    filr_move_index_filename(context, input->input_str);
+    view_center_camera(context, view);
+
+    input_mode_cancel(context, view, input);
+}
+
+void create_dir_confirm(INPUTS_ARGS) {
+    result create_err = filr_create_directory(context, input->input_str);
 
     if (create_err.err) {
         logger_setup_err(context, view, input, create_err);
@@ -204,7 +236,7 @@ void input_mode_delete_last(view_t *view, inputs_t *input) {
     view_window_set_str(&view->input, input->input_str);
 }
 
-void delete_file(INPUTS_ARGS) {//TODO: delete directory
+void delete_file(INPUTS_ARGS) {
     result delete_err = filr_delete_file(context);
 
     if (delete_err.err) {
@@ -273,11 +305,13 @@ void handle_key_presses(ALL_ARGS) {
 
             HANDLE_INPUT(view_dotfiles, context, view, input);
 
-            HANDLE_INPUT(create_start, context, view, input);
+            HANDLE_INPUT(create_file_start, context, view, input);
 
             HANDLE_INPUT(delete_file, context, view, input);
 
             HANDLE_INPUT(rename_start, context, view, input);
+
+            HANDLE_INPUT_SHIFT(create_directory_start, context, view, input);
 
             HANDLE_INPUT_MOUSE(mouse_left_click, context, view, input);
 
@@ -291,16 +325,23 @@ void handle_key_presses(ALL_ARGS) {
                 input->scroll_frames_count = 0;
             break;
 
-        case INPUTS_CREATE:
-            HANDLE_INPUT(create_confirm, context, view, input);
-            HANDLE_INPUT(input_mode_cancel, context, view, input);
+        case INPUTS_CREATE_FILE:
+            HANDLE_INPUT(create_file_confirm, context, view, input);
+            HANDLE_INPUT_CTRL(input_mode_cancel, context, view, input);
+            HANDLE_INPUT(input_mode_delete_last, view, input);
+            input_mode_parse_key_queue(view, input);
+            break;
+
+        case INPUTS_CREATE_DIRECTORY:
+            HANDLE_INPUT(create_dir_confirm, context, view, input);
+            HANDLE_INPUT_CTRL(input_mode_cancel, context, view, input);
             HANDLE_INPUT(input_mode_delete_last, view, input);
             input_mode_parse_key_queue(view, input);
             break;
 
         case INPUTS_RENAME:
             HANDLE_INPUT(rename_confirm, context, view, input);
-            HANDLE_INPUT(input_mode_cancel, context, view, input);
+            HANDLE_INPUT_CTRL(input_mode_cancel, context, view, input);
             HANDLE_INPUT(input_mode_delete_last, view, input);
             input_mode_parse_key_queue(view, input);
             break;

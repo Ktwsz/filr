@@ -6,13 +6,14 @@
 #include "filr.h"
 
 #define SCROLL_SPEED_CAP 1.0
-#define SCROLL_STEP 0.5
+#define SCROLL_STEP 0.75
 #define SCROLL_KEY_SPEED 0.25
 #define SCROLL_FRAME_THRESHOLD 10
 
 typedef enum {
     INPUTS_NORMAL,
-    INPUTS_CREATE,
+    INPUTS_CREATE_FILE,
+    INPUTS_CREATE_DIRECTORY,
     INPUTS_RENAME
 } mode_enum;
 
