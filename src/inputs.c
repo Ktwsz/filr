@@ -145,8 +145,15 @@ void change_file_sorting(ARGS) {
 }
 
 void view_dotfiles(ARGS) {
-    view->window.hide_dotfiles = !view->window.hide_dotfiles;
-    result err = filr_set_hide_dotfiles(&CONTEXT_FOCUS, view->window.hide_dotfiles);
+    result err;
+    if (input->window_focus == 0) {
+        view->window.hide_dotfiles = !view->window.hide_dotfiles;
+        err = filr_set_hide_dotfiles(&CONTEXT_FOCUS, view->window.hide_dotfiles);
+    } else {
+        view->second_window.hide_dotfiles = !view->second_window.hide_dotfiles;
+        err = filr_set_hide_dotfiles(&CONTEXT_FOCUS, view->second_window.hide_dotfiles);
+    }
+
     if (err.err)  {
         logger_setup_err(context, view, input, err);
         return;
@@ -302,6 +309,10 @@ void change_window_focus_right(ARGS) {
     input->window_focus = 1;
 }
 
+void toggle_file_data(ARGS) {
+    view_toggle_hide_file_data(view, input->window_focus);
+}
+
 void handle_key_presses(ARGS) {
     switch (input->mode) {
         case INPUTS_NORMAL:
@@ -330,6 +341,8 @@ void handle_key_presses(ARGS) {
             HANDLE_INPUT(change_window_focus_left, context, view, input);
 
             HANDLE_INPUT(change_window_focus_right, context, view, input);
+
+            HANDLE_INPUT(toggle_file_data, context, view, input);
 
             HANDLE_INPUT_SHIFT(create_directory_start, context, view, input);
 
@@ -380,5 +393,5 @@ void mouse_input_callback(const void *inputs_ptr, Rectangle rect, int ix, int fo
 
 }
 
-//TODO: add key for hiding date and size of file
+//TODO: add cd command
 //TODO: add history

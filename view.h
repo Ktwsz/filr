@@ -12,8 +12,10 @@ typedef struct {
     Vector2 text_size;
     Vector2 offset;
     bool hide_dotfiles;
+    bool hide_file_data;
     bool show;
     cstr str;
+    int file_display_row_cap;
 } view_window;
 
 typedef struct {
@@ -33,20 +35,21 @@ typedef struct {
         logger;
     view_theme theme;
     Rectangle size;
-    int file_display_row_cap;
 } view_t;
 
 typedef void(*mouse_input_callback_t)(const void *, Rectangle, int, int);
 
 void view_view(filr_context *context, view_t *view, const void *inputs_ptr, mouse_input_callback_t mouse_input_callback, int window_focus);
 
-void view_directory(filr_context *context, view_window *window, view_theme *theme, const void *inputs_ptr, mouse_input_callback_t mouse_input_callback, int row_cap, int window_id, bool is_focused);
+void view_directory(filr_context *context, view_window *window, view_theme *theme, const void *inputs_ptr, mouse_input_callback_t mouse_input_callback, int window_id, bool is_focused);
 
 void view_header(filr_context *context, view_window *window, view_theme *theme);
 
 void view_logger(view_window *window, view_theme *theme);
 
 void view_toggle_second_window(view_t *window);
+
+void view_toggle_hide_file_data(view_t *view, int window_id);
 
 void view_show_input(view_t *view);
 

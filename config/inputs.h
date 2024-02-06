@@ -18,6 +18,7 @@
     #define key_toggle_second_window KEY_TAB
     #define key_change_window_focus_left KEY_LEFT
     #define key_change_window_focus_right KEY_RIGHT
+    #define key_toggle_file_data KEY_COMMA
 // Normal mode
 
 // View change bindings
