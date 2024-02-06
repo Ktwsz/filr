@@ -36,11 +36,11 @@ typedef struct {
     int file_display_row_cap;
 } view_t;
 
-typedef void(*mouse_input_callback_t)(const void *, Rectangle, int);
+typedef void(*mouse_input_callback_t)(const void *, Rectangle, int, int);
 
 void view_view(filr_context *context, view_t *view, const void *inputs_ptr, mouse_input_callback_t mouse_input_callback, int window_focus);
 
-void view_directory(filr_context *context, view_window *window, view_theme *theme, const void *inputs_ptr, mouse_input_callback_t mouse_input_callback, int row_cap, bool is_focused);
+void view_directory(filr_context *context, view_window *window, view_theme *theme, const void *inputs_ptr, mouse_input_callback_t mouse_input_callback, int row_cap, int window_id, bool is_focused);
 
 void view_header(filr_context *context, view_window *window, view_theme *theme);
 

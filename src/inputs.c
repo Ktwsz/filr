@@ -26,6 +26,7 @@ void logger_mode_changed(view_t *view, inputs_t *input);
 
 void inputs_init(inputs_t *input, view_t *view) {
     input->mouse_ix = -1;
+    input->mouse_focus = 0;
     input->scroll_pos = 0;
     input->mode = INPUTS_NORMAL;
     input->scroll_frames_count = 0;
@@ -92,8 +93,11 @@ void file_action(ARGS) {
 
 void mouse_left_click(ARGS) {
     if (CONTEXT_FOCUS.visible_index == input->mouse_ix) {
-        file_action(&CONTEXT_FOCUS, view, input);
-    } else if (input->mouse_ix != -1) CONTEXT_FOCUS.visible_index = input->mouse_ix;
+        file_action(context, view, input);
+    } else if (input->mouse_ix != -1) {
+        input->window_focus = input->mouse_focus;
+        CONTEXT_FOCUS.visible_index = input->mouse_ix;
+    }
 }
 
 
@@ -282,12 +286,8 @@ void open_windows_explorer(ARGS) {
 
 void toggle_second_window(ARGS) {
     view_toggle_second_window(view);
-    if (view->second_window.show)
-        filr_init_context(&context[1]);
-    else {
-        context[1].files_all.size = 0;
+    if (!view->second_window.show)
         input->window_focus = 0;
-    }
 }
 
 void change_window_focus_left(ARGS) {
@@ -368,13 +368,17 @@ void handle_key_presses(ARGS) {
     }
 }
 
-void mouse_input_callback(const void *inputs_ptr, Rectangle rect, int ix) {
+void mouse_input_callback(const void *inputs_ptr, Rectangle rect, int ix, int focus) {
     inputs_t *input = (inputs_t*)inputs_ptr;
 
     Vector2 mouse_position = GetMousePosition();
 
-    if (CheckCollisionPointRec(mouse_position, rect))
+    if (CheckCollisionPointRec(mouse_position, rect)) {
         input->mouse_ix = ix;
+        input->mouse_focus = focus;
+    }
+
 }
 
-//TODO: add key fior hiding date and size of file
+//TODO: add key for hiding date and size of file
+//TODO: add history

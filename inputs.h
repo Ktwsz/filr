@@ -14,6 +14,7 @@ typedef enum {
 
 typedef struct {
     int mouse_ix;
+    int mouse_focus;
     float scroll_pos;
     mode_enum mode;
     int scroll_frames_count;
@@ -27,6 +28,6 @@ void inputs_init(inputs_t *input, view_t *view);
 
 void handle_key_presses(filr_context *context, view_t *view, inputs_t *input);
 
-void mouse_input_callback(const void *inputs_ptr, Rectangle rect, int ix);
+void mouse_input_callback(const void *inputs_ptr, Rectangle rect, int ix, int focus);
 
 #endif

@@ -230,7 +230,7 @@ void view_hide_input(view_t *view) {
     cstr_init(&view->input.str, 0);
 }
 
-void view_directory(filr_context *context, view_window *window, view_theme *theme, const void *inputs_ptr, mouse_input_callback_t mouse_input_callback, int row_cap, bool is_focused) {
+void view_directory(filr_context *context, view_window *window, view_theme *theme, const void *inputs_ptr, mouse_input_callback_t mouse_input_callback, int row_cap, int window_id, bool is_focused) {
     if (!window->show)
         return;
 
@@ -273,8 +273,7 @@ void view_directory(filr_context *context, view_window *window, view_theme *them
                    color);
 
 
-        if (is_focused)
-            mouse_input_callback(inputs_ptr, row_rect, ix);
+        mouse_input_callback(inputs_ptr, row_rect, ix, window_id);
     }
 
     view_scroll_bar(context, ix, window, theme);
@@ -282,10 +281,10 @@ void view_directory(filr_context *context, view_window *window, view_theme *them
 
 void view_view(filr_context *context, view_t *view, const void *inputs_ptr, mouse_input_callback_t mouse_input_callback, int window_focus) {
     view_header(&context[0], &view->header, &view->theme);
-    view_directory(&context[0], &view->window, &view->theme, inputs_ptr, mouse_input_callback, view->file_display_row_cap, window_focus == 0);
+    view_directory(&context[0], &view->window, &view->theme, inputs_ptr, mouse_input_callback, view->file_display_row_cap, 0, window_focus == 0);
 
     view_header(&context[1], &view->second_header, &view->theme);
-    view_directory(&context[1], &view->second_window, &view->theme, inputs_ptr, mouse_input_callback, view->file_display_row_cap, window_focus == 1);
+    view_directory(&context[1], &view->second_window, &view->theme, inputs_ptr, mouse_input_callback, view->file_display_row_cap, 1, window_focus == 1);
 
     view_input(&view->input, &view->theme);
     view_logger(&view->logger, &view->theme);

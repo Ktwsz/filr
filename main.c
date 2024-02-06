@@ -12,10 +12,14 @@
 int main(void) {
     filr_context context_array[2] = {0};
 
-    result err;
-    err = filr_init_context(&context_array[0]);
+    result err_load1, err_load2;
 
-    assert(!err.err);
+    err_load1 = filr_init_context(&context_array[0]);
+    assert(!err_load1.err);
+
+    err_load2 = filr_init_context(&context_array[1]);
+    assert(!err_load2.err);
+
 
     SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_RESIZABLE);
 
@@ -24,9 +28,10 @@ int main(void) {
 
     SetTargetFPS(30);
 
+    result err_load_view;
     view_t view;
-    err = view_init(&view, (float)INIT_WINDOW_WIDTH, (float)INIT_WINDOW_HEIGHT);
-    assert(!err.err);
+    err_load_view = view_init(&view, (float)INIT_WINDOW_WIDTH, (float)INIT_WINDOW_HEIGHT);
+    assert(!err_load_view.err);
 
     inputs_t input = {0};
     inputs_init(&input, &view);
