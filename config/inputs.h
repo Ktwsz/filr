@@ -15,6 +15,9 @@
     #define key_key_scroll_up KEY_UP
     #define key_delete_file KEY_D
     #define key_open_windows_explorer KEY_E
+    #define key_toggle_second_window KEY_TAB
+    #define key_change_window_focus_left KEY_LEFT
+    #define key_change_window_focus_right KEY_RIGHT
 // Normal mode
 
 // View change bindings

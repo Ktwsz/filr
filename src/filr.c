@@ -113,10 +113,6 @@ result filr_init_context(filr_context *context) {
     if (load_err.err)
         return load_err;
 
-    result view_err = filr_visible_update(context);
-    if (view_err.err)
-        return view_err;
-
     return RESULT_OK;
 }
 

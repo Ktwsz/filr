@@ -5,9 +5,9 @@
 #include "../config/inputs.h"
 
 
-#define BASE_ARGS filr_context *context, view_t *view
-#define INPUTS_ARGS filr_context *context, view_t *view, inputs_t *input
-#define ALL_ARGS filr_context *context, view_t *view, inputs_t *input
+#define ARGS filr_context *context, view_t *view, inputs_t *input
+
+#define CONTEXT_FOCUS context[input->window_focus]
 
 
 #define HANDLE_INPUT(input, ...) if (!IsKeyDown(KEY_LEFT_SHIFT) && !IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(key_##input)) input(__VA_ARGS__)
@@ -29,18 +29,19 @@ void inputs_init(inputs_t *input, view_t *view) {
     input->scroll_pos = 0;
     input->mode = INPUTS_NORMAL;
     input->scroll_frames_count = 0;
+    input->window_focus = 0;
     cstr_init(&input->input_str, 0);
 
     logger_mode_changed(view, input);
 }
 
 
-void input_mode_cancel(INPUTS_ARGS);
+void input_mode_cancel(ARGS);
 
-void logger_setup_err(INPUTS_ARGS, result err) {
+void logger_setup_err(ARGS, result err) {
     view_logger_set_err(view, err);
     if (input->mode == INPUTS_RENAME || input->mode == INPUTS_CREATE_FILE || input->mode == INPUTS_CREATE_DIRECTORY)
-        input_mode_cancel(context, view, input);
+        input_mode_cancel(&CONTEXT_FOCUS, view, input);
 }
 
 void logger_mode_changed(view_t *view, inputs_t *input) {
@@ -61,23 +62,23 @@ void logger_mode_changed(view_t *view, inputs_t *input) {
     }
 }
 
-void center_camera(BASE_ARGS) {
-    view_center_camera(context, view);
+void center_camera(ARGS) {
+    view_center_camera(&CONTEXT_FOCUS, view, input->window_focus);
 }
 
-void move_one_down(BASE_ARGS) {
-    filr_move_index(context, 1);
-    view_move_camera(context, view);
+void move_one_down(ARGS) {
+    filr_move_index(&CONTEXT_FOCUS, 1);
+    view_move_camera(&CONTEXT_FOCUS, view, input->window_focus);
 }
 
-void move_one_up(BASE_ARGS) {
-    filr_move_index(context, -1);
-    view_move_camera(context, view);
+void move_one_up(ARGS) {
+    filr_move_index(&CONTEXT_FOCUS, -1);
+    view_move_camera(&CONTEXT_FOCUS, view, input->window_focus);
 }
 
-void file_action(INPUTS_ARGS) {
-    bool dir_change = context->files_visible.files[context->visible_index].is_directory;
-    result err = filr_action(context);
+void file_action(ARGS) {
+    bool dir_change = CONTEXT_FOCUS.files_visible.files[CONTEXT_FOCUS.visible_index].is_directory;
+    result err = filr_action(&CONTEXT_FOCUS);
     if (err.err) {
         logger_setup_err(context, view, input, err);
         return;
@@ -85,29 +86,29 @@ void file_action(INPUTS_ARGS) {
 
     if (dir_change) {
         context->visible_index = 0;
-        view_move_camera(context, view);
+        view_move_camera(&CONTEXT_FOCUS, view, input->window_focus);
     }
 }
 
-void mouse_left_click(INPUTS_ARGS) {
-    if (context->visible_index == input->mouse_ix) {
-        file_action(context, view, input);
-    } else if (input->mouse_ix != -1) context->visible_index = input->mouse_ix;
+void mouse_left_click(ARGS) {
+    if (CONTEXT_FOCUS.visible_index == input->mouse_ix) {
+        file_action(&CONTEXT_FOCUS, view, input);
+    } else if (input->mouse_ix != -1) CONTEXT_FOCUS.visible_index = input->mouse_ix;
 }
 
 
-void scroll(INPUTS_ARGS, float scroll_move) {
+void scroll(ARGS, float scroll_move) {
     input->scroll_pos += (scroll_move > SCROLL_SPEED_CAP)? SCROLL_SPEED_CAP : scroll_move;
     if (fabs(input->scroll_pos) > SCROLL_STEP) {
         int step = (int) (input->scroll_pos / SCROLL_STEP);
         input->scroll_pos -= (float) (step) * SCROLL_STEP;
-        filr_move_index(context, -step);
-        view_center_camera(context, view);
+        filr_move_index(&CONTEXT_FOCUS, -step);
+        view_center_camera(&CONTEXT_FOCUS, view, input->window_focus);
     }
 }
 
 
-void mouse_scroll(INPUTS_ARGS) {
+void mouse_scroll(ARGS) {
     float mouse_wheel_move = 0;
 
     if ((mouse_wheel_move = GetMouseWheelMove())) {
@@ -115,100 +116,100 @@ void mouse_scroll(INPUTS_ARGS) {
     }
 }
 
-void key_scroll_down(INPUTS_ARGS) {
+void key_scroll_down(ARGS) {
     if (input->scroll_frames_count < SCROLL_FRAME_THRESHOLD)
         input->scroll_frames_count++;
     else
         scroll(context, view, input, -SCROLL_KEY_SPEED);
 }
 
-void key_scroll_up(INPUTS_ARGS) {
+void key_scroll_up(ARGS) {
     if (input->scroll_frames_count < SCROLL_FRAME_THRESHOLD)
         input->scroll_frames_count++;
     else
         scroll(context, view, input, SCROLL_KEY_SPEED);
 }
 
-void change_file_sorting(INPUTS_ARGS) {
-    result err = filr_next_sorting_ix(context);
+void change_file_sorting(ARGS) {
+    result err = filr_next_sorting_ix(&CONTEXT_FOCUS);
     if (err.err)  {
         logger_setup_err(context, view, input, err);
         return;
     }
-    context->visible_index = 0;
-    view_center_camera(context, view);
+    CONTEXT_FOCUS.visible_index = 0;
+    view_center_camera(&CONTEXT_FOCUS, view, input->window_focus);
 }
 
-void view_dotfiles(INPUTS_ARGS) {
+void view_dotfiles(ARGS) {
     view->window.hide_dotfiles = !view->window.hide_dotfiles;
-    result err = filr_set_hide_dotfiles(context, view->window.hide_dotfiles);
+    result err = filr_set_hide_dotfiles(&CONTEXT_FOCUS, view->window.hide_dotfiles);
     if (err.err)  {
         logger_setup_err(context, view, input, err);
         return;
     }
-    context->visible_index = 0;
-    view_center_camera(context, view);
+    CONTEXT_FOCUS.visible_index = 0;
+    view_center_camera(&CONTEXT_FOCUS, view, input->window_focus);
 }
 
-void input_mode_start(INPUTS_ARGS, mode_enum mode) {
+void input_mode_start(ARGS, mode_enum mode) {
     input->mode = mode;
     view_show_input(view);
     logger_mode_changed(view, input);
 }
 
-void create_file_start(INPUTS_ARGS) {
+void create_file_start(ARGS) {
     input_mode_start(context, view, input, INPUTS_CREATE_FILE);
 }
 
-void create_directory_start(INPUTS_ARGS) {
+void create_directory_start(ARGS) {
     input_mode_start(context, view, input, INPUTS_CREATE_DIRECTORY);
 }
 
-void input_mode_cancel(INPUTS_ARGS) {
+void input_mode_cancel(ARGS) {
     input->mode = INPUTS_NORMAL;
     view_hide_input(view);
     cstr_init(&input->input_str, 0);
     logger_mode_changed(view, input);
 }
 
-void create_file_confirm(INPUTS_ARGS) {
-    result create_err = filr_create_file(context, input->input_str);
+void create_file_confirm(ARGS) {
+    result create_err = filr_create_file(&CONTEXT_FOCUS, input->input_str);
 
     if (create_err.err) {
         logger_setup_err(context, view, input, create_err);
         return;
     }
 
-    context->files_all.size = 0;
-    result load_err = filr_load_directory(context);
+    CONTEXT_FOCUS.files_all.size = 0;
+    result load_err = filr_load_directory(&CONTEXT_FOCUS);
     if (load_err.err) {
         logger_setup_err(context, view, input, load_err);
         return;
     }
 
-    filr_move_index_filename(context, input->input_str);
-    view_center_camera(context, view);
+    filr_move_index_filename(&CONTEXT_FOCUS, input->input_str);
+    view_center_camera(&CONTEXT_FOCUS, view, input->window_focus);
 
     input_mode_cancel(context, view, input);
 }
 
-void create_directory_confirm(INPUTS_ARGS) {
-    result create_err = filr_create_directory(context, input->input_str);
+void create_directory_confirm(ARGS) {
+    result create_err = filr_create_directory(&CONTEXT_FOCUS, input->input_str);
 
     if (create_err.err) {
         logger_setup_err(context, view, input, create_err);
         return;
     }
 
-    context->files_all.size = 0;
-    result load_err = filr_load_directory(context);
+    CONTEXT_FOCUS.files_all.size = 0;
+    result load_err = filr_load_directory(&CONTEXT_FOCUS);
     if (load_err.err) {
         logger_setup_err(context, view, input, load_err);
         return;
     }
 
-    filr_move_index_filename(context, input->input_str);
-    view_center_camera(context, view);
+    filr_move_index_filename(&CONTEXT_FOCUS, input->input_str);
+    view_center_camera(&CONTEXT_FOCUS, view, input->window_focus);
 
     input_mode_cancel(context, view, input);
 }
@@ -218,16 +219,16 @@ void input_mode_delete_last(view_t *view, inputs_t *input) {
     view_window_set_str(&view->input, input->input_str);
 }
 
-void delete_file(INPUTS_ARGS) {
-    result delete_err = filr_delete_file(context);
+void delete_file(ARGS) {
+    result delete_err = filr_delete_file(&CONTEXT_FOCUS);
 
     if (delete_err.err) {
         logger_setup_err(context, view, input, delete_err);
         return;
     }
 
-    context->files_all.size = 0;
-    result load_err = filr_load_directory(context);
+    CONTEXT_FOCUS.files_all.size = 0;
+    result load_err = filr_load_directory(&CONTEXT_FOCUS);
     if (load_err.err) {
         logger_setup_err(context, view, input, load_err);
     }
@@ -246,47 +247,69 @@ void input_mode_parse_key_queue(view_t *view, inputs_t *input) {
     view_window_set_str(&view->input, input->input_str);
 }
 
-void rename_start(INPUTS_ARGS) {
+void rename_start(ARGS) {
     input_mode_start(context, view, input, INPUTS_RENAME);
 
-    cstr_copy(&input->input_str, *filr_get_name_visible(context, context->visible_index));
+    cstr_copy(&input->input_str, *filr_get_name_visible(&CONTEXT_FOCUS, CONTEXT_FOCUS.visible_index));
     view_window_set_str(&view->input, input->input_str);
 }
 
-void rename_confirm(INPUTS_ARGS) {
-    result rename_err = filr_rename_file(context, input->input_str);
+void rename_confirm(ARGS) {
+    result rename_err = filr_rename_file(&CONTEXT_FOCUS, input->input_str);
     if (rename_err.err) {
         logger_setup_err(context, view, input, rename_err);
         return;
     }
 
-    context->files_all.size = 0;
-    result load_err = filr_load_directory(context);
+    CONTEXT_FOCUS.files_all.size = 0;
+    result load_err = filr_load_directory(&CONTEXT_FOCUS);
     if (load_err.err) {
         logger_setup_err(context, view, input, load_err);
         return;
     }
-    filr_move_index_filename(context, input->input_str);
-    view_center_camera(context, view);
+    filr_move_index_filename(&CONTEXT_FOCUS, input->input_str);
+    view_center_camera(&CONTEXT_FOCUS, view, input->window_focus);
 
     input_mode_cancel(context, view, input);
 }
 
-void open_windows_explorer(INPUTS_ARGS) {
-    result err = filr_open_windows_explorer(context);
+void open_windows_explorer(ARGS) {
+    result err = filr_open_windows_explorer(&CONTEXT_FOCUS);
 
     if (err.err)
         logger_setup_err(context, view, input, err);
 }
 
-void handle_key_presses(ALL_ARGS) {
+void toggle_second_window(ARGS) {
+    view_toggle_second_window(view);
+    if (view->second_window.show)
+        filr_init_context(&context[1]);
+    else {
+        context[1].files_all.size = 0;
+        input->window_focus = 0;
+    }
+}
+
+void change_window_focus_left(ARGS) {
+    if (!view->second_window.show)
+        return;
+    input->window_focus = 0;
+}
+
+void change_window_focus_right(ARGS) {
+    if (!view->second_window.show)
+        return;
+    input->window_focus = 1;
+}
+
+void handle_key_presses(ARGS) {
     switch (input->mode) {
         case INPUTS_NORMAL:
-            HANDLE_INPUT(center_camera, context, view);
+            HANDLE_INPUT(center_camera, context, view, input);
 
-            HANDLE_INPUT(move_one_down, context, view);
+            HANDLE_INPUT(move_one_down, context, view, input);
 
-            HANDLE_INPUT(move_one_up, context, view);
+            HANDLE_INPUT(move_one_up, context, view, input);
 
             HANDLE_INPUT(file_action, context, view, input);
 
@@ -301,6 +324,12 @@ void handle_key_presses(ALL_ARGS) {
             HANDLE_INPUT(rename_start, context, view, input);
 
             HANDLE_INPUT(open_windows_explorer, context, view, input);
+
+            HANDLE_INPUT(toggle_second_window, context, view, input);
+
+            HANDLE_INPUT(change_window_focus_left, context, view, input);
+
+            HANDLE_INPUT(change_window_focus_right, context, view, input);
 
             HANDLE_INPUT_SHIFT(create_directory_start, context, view, input);
 
@@ -347,3 +376,5 @@ void mouse_input_callback(const void *inputs_ptr, Rectangle rect, int ix) {
     if (CheckCollisionPointRec(mouse_position, rect))
         input->mouse_ix = ix;
 }
+
+//TODO: add key fior hiding date and size of file

@@ -18,6 +18,8 @@ typedef struct {
     mode_enum mode;
     int scroll_frames_count;
     cstr input_str;
+    bool second_window_open;
+    int window_focus;
 } inputs_t;
 
 

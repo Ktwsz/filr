@@ -26,7 +26,9 @@ typedef struct {
 
 typedef struct {
     view_window window,
+        second_window,
         header,
+        second_header,
         input,
         logger;
     view_theme theme;
@@ -36,13 +38,15 @@ typedef struct {
 
 typedef void(*mouse_input_callback_t)(const void *, Rectangle, int);
 
-void view_view(filr_context *context, view_t *view, const void *inputs_ptr, mouse_input_callback_t mouse_input_callback);
+void view_view(filr_context *context, view_t *view, const void *inputs_ptr, mouse_input_callback_t mouse_input_callback, int window_focus);
 
-void view_directory(filr_context *context, view_window *window, view_theme *theme, const void *inputs_ptr, mouse_input_callback_t mouse_input_callback, int row_cap);
+void view_directory(filr_context *context, view_window *window, view_theme *theme, const void *inputs_ptr, mouse_input_callback_t mouse_input_callback, int row_cap, bool is_focused);
 
 void view_header(filr_context *context, view_window *window, view_theme *theme);
 
 void view_logger(view_window *window, view_theme *theme);
+
+void view_toggle_second_window(view_t *window);
 
 void view_show_input(view_t *view);
 
@@ -56,15 +60,15 @@ void view_logger_clear_err(view_t *view);
 
 void view_input(view_window *window, view_theme *theme);
 
-void view_center_camera(filr_context *context, view_t *view);
+void view_center_camera(filr_context *context, view_t *view, int window_focus);
 
-void view_move_camera(filr_context *context, view_t *view);
+void view_move_camera(filr_context *context, view_t *view, int window_focus);
 
-void view_handle_resize(filr_context *context, view_t *view);
+void view_handle_resize(filr_context *context, view_t *view, int window_focus);
 
 void view_scroll_bar(filr_context *context, size_t ix, view_window *window, view_theme *theme);
 
-result view_init(view_t *view, int window_width, int window_height);
+result view_init(view_t *view, float window_width, float window_height);
 
 void view_draw_background(view_t *view);
 
