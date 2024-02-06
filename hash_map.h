@@ -1,3 +1,5 @@
+//https://github.com/Ktwsz/hash-map
+
 #ifndef HASH_MAP_H
 #define HASH_MAP_H
 
@@ -8,9 +10,10 @@
 #define HASH_MAP_SIZE 500
 
 
-typedef struct {
+typedef struct node {
     cstr key;
     void *value;
+    struct node *next;
 } node;
 
 typedef struct {

@@ -396,4 +396,5 @@ void mouse_input_callback(const void *inputs_ptr, Rectangle rect, int ix, int fo
 
 }
 
+//TODO: add fuzzy finder
 //TODO: add cd command
