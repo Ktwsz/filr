@@ -27,6 +27,7 @@ void logger_mode_changed(view_t *view, inputs_t *input);
 void inputs_init(inputs_t *input, view_t *view) {
     input->mouse_ix = -1;
     input->mouse_focus = 0;
+    input->mouse_ix_rect = (Rectangle){0};
     input->scroll_pos = 0;
     input->mode = INPUTS_NORMAL;
     input->scroll_frames_count = 0;
@@ -92,7 +93,9 @@ void file_action(ARGS) {
 
 void mouse_left_click(ARGS) {
     if (CONTEXT_FOCUS.visible_index == input->mouse_ix) {
-        file_action(context, view, input);
+        Vector2 mouse_position = GetMousePosition();
+        if (CheckCollisionPointRec(mouse_position, input->mouse_ix_rect))
+            file_action(context, view, input);
     } else if (input->mouse_ix != -1) {
         input->window_focus = input->mouse_focus;
         CONTEXT_FOCUS.visible_index = input->mouse_ix;
@@ -388,6 +391,7 @@ void mouse_input_callback(const void *inputs_ptr, Rectangle rect, int ix, int fo
     if (CheckCollisionPointRec(mouse_position, rect)) {
         input->mouse_ix = ix;
         input->mouse_focus = focus;
+        input->mouse_ix_rect = rect;
     }
 
 }

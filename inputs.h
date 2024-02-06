@@ -15,6 +15,7 @@ typedef enum {
 typedef struct {
     int mouse_ix;
     int mouse_focus;
+    Rectangle mouse_ix_rect;
     float scroll_pos;
     mode_enum mode;
     int scroll_frames_count;
