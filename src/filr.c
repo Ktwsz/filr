@@ -272,6 +272,7 @@ void filr_move_index_filename(filr_context  *context, cstr filename) {
             return;
         }
     }
+    context->visible_index = 0;
 }
 
 
@@ -299,7 +300,13 @@ result filr_goto_directory(filr_context* context) {
     cstr old_path;
     cstr_copy(&old_path, context->directory);
 
+    bool backwards = false;
+    cstr current_directory;
+
     if (strcmp(goto_directory.str, "..") == 0) {
+        backwards = true;
+        cstr_strip_suffix(&current_directory, context->directory, '\\');
+
         cstr tmp;
         cstr_strip_directory(&tmp, context->directory);
         
@@ -317,6 +324,10 @@ result filr_goto_directory(filr_context* context) {
         cstr_copy(&(context->directory), old_path);
         return err;
     }
+    if (backwards)
+        filr_move_index_filename(context, current_directory);
+    else
+        context->visible_index = 0;
 
     return RESULT_OK;
 }

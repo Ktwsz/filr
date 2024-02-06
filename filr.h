@@ -76,7 +76,7 @@ result filr_open_windows_explorer(filr_context *context);
 
 void filr_move_index(filr_context *context, int di);
 
-void filr_move_index_filename(filr_context  *context, cstr filename);
+void filr_move_index_filename(filr_context *context, cstr filename);
 
 result filr_action(filr_context *context);
 

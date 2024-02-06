@@ -86,8 +86,7 @@ void file_action(ARGS) {
     }
 
     if (dir_change) {
-        context->visible_index = 0;
-        view_move_camera(&CONTEXT_FOCUS, view, input->window_focus);
+        view_center_camera(&CONTEXT_FOCUS, view, input->window_focus);
     }
 }
 
@@ -394,4 +393,3 @@ void mouse_input_callback(const void *inputs_ptr, Rectangle rect, int ix, int fo
 }
 
 //TODO: add cd command
-//TODO: add history

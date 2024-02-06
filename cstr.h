@@ -27,6 +27,12 @@ void cstr_concat_single(cstr *dst, char c);
 
 void cstr_pop(cstr *dst);
 
+size_t cstr_find_last(cstr *dst, char c);
+
+void cstr_strip_suffix(cstr *dst, cstr src, char c);
+
+void cstr_remove_suffix(cstr *dst, cstr src, char c);
+
 void cstr_strip_directory(cstr *dst, cstr src);
 
 void cstr_cap(cstr *dst, cstr src, int len);

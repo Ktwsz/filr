@@ -119,15 +119,30 @@ void cstr_pop(cstr *dst) {
     dst->str[dst->size] = '\0';
 }
 
-void cstr_strip_directory(cstr *dst, cstr src) {
-    size_t end_ix = src.size-1;
-    
+size_t cstr_find_last(cstr *dst, const char c) {
+    size_t end_ix = dst->size-1;
+
     for (; end_ix > 0; --end_ix) {
-        if (src.str[end_ix] == '\\' || src.str[end_ix] == '/') break;
+        if (dst->str[end_ix] == c) return end_ix;
     }
+    return 0;
+}
+
+void cstr_strip_suffix(cstr *dst, cstr src, const char c) {
+    size_t end_ix = cstr_find_last(&src, c);
+
+    cstr_init_name(dst, &src.str[end_ix + 1]);
+}
+
+void cstr_remove_suffix(cstr *dst, cstr src, const char c) {
+    size_t end_ix = cstr_find_last(&src, c);
 
     cstr_init(dst, end_ix);
     memcpy(dst->str, src.str, end_ix);
+}
+
+void cstr_strip_directory(cstr *dst, cstr src) {
+    cstr_remove_suffix(dst, src, '\\');
 }
 
 void cstr_cap(cstr *dst, cstr src, int len) {
