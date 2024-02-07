@@ -8,6 +8,7 @@
 
 cstr CSTR_DASH = { .str = "\\", .size = 1 };
 cstr CSTR_TRASH_DIR = { .str = "filr_trash", .size = 10 };
+cstr CSTR_C_DISC = { .str = "C:", .size = 2 };
 
 result filr_file_array_append(filr_array *array, filr_file* new_elem) {
     array->size++;
@@ -249,8 +250,32 @@ result filr_create_directory(filr_context *context, cstr file_name) {
     return (err) ? RESULT_OK : RESULT_ERR("ERR: filr_create_directory failed ");
 }
 
+cstr filr_setup_command(filr_context *context, const char *command_format) {
+    cstr full_path;
+    cstr_concat(&full_path, 2, CSTR_C_DISC, context->directory);
+
+    cstr command;
+    cstr_init(&command, 0);
+
+    snprintf(command.str, MAX_STR_LEN, command_format, full_path.str);
+    command.size = strlen(command.str);
+
+    return command;
+}
+
+result filr_open_nvim(filr_context *context) {
+    cstr command = filr_setup_command(context, "start pwsh.exe -noexit -command \" cd %s && nvim .\"");
+    cstr_print(command);
+    system(command.str);
+
+    return RESULT_OK;
+}
+
 result filr_open_windows_explorer(filr_context *context) {
-    //TODO: thought this would be easier https://stackoverflow.com/questions/31563579/execute-command-using-win32
+    cstr command = filr_setup_command(context, "start %s");
+    system(command.str);
+
+    return RESULT_OK;
 }
 
 void filr_move_index(filr_context *context, int di) {

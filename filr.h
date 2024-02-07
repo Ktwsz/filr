@@ -72,6 +72,8 @@ result filr_rename_file(filr_context  *context, cstr file_name);
 
 result filr_delete_file(filr_context *context);
 
+result filr_open_nvim(filr_context *context);
+
 result filr_open_windows_explorer(filr_context *context);
 
 void filr_move_index(filr_context *context, int di);

@@ -293,6 +293,13 @@ void open_windows_explorer(ARGS) {
         logger_setup_err(context, view, input, err);
 }
 
+void open_nvim(ARGS) {
+    result err = filr_open_nvim(&CONTEXT_FOCUS);
+
+    if (err.err)
+        logger_setup_err(context, view, input, err);
+}
+
 void toggle_second_window(ARGS) {
     view_toggle_second_window(view);
     if (!view->second_window.show)
@@ -337,6 +344,8 @@ void handle_key_presses(ARGS) {
             HANDLE_INPUT(rename_start, context, view, input);
 
             HANDLE_INPUT(open_windows_explorer, context, view, input);
+
+            HANDLE_INPUT(open_nvim, context, view, input);
 
             HANDLE_INPUT(toggle_second_window, context, view, input);
 

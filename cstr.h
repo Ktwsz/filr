@@ -43,6 +43,8 @@ void cstr_parse_date(cstr *dst, us day, us month, us year, us hour, us minute);
 
 void cstr_strip_extension(cstr *dst, cstr src);
 
+void cstr_print(cstr s);
+
 size_t cstr_hash(cstr s);
 
 size_t cstr_hash_str(const char *s);

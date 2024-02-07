@@ -239,6 +239,10 @@ void cstr_strip_extension(cstr *dst, cstr src) {
     sprintf(dst->str, "%s", src.str + i + 1);
 }
 
+void cstr_print(cstr s) {
+    printf("%s\n", s.str);
+}
+
 size_t cstr_hash(cstr s) {
     const size_t p = HASH_P, m = HASH_M;
     size_t pow = 1;
