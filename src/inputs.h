@@ -1,7 +1,7 @@
 #ifndef INPUTS_H
 #define INPUTS_H
 
-#include "lib/raylib.h"
+#include "raylib.h"
 #include "view.h"
 #include "filr.h"
 

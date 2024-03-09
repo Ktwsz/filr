@@ -1,4 +1,4 @@
-#include "lib/raylib.h"
+#include "raylib.h"
 
 #include "filr.h"
 #include "view.h"

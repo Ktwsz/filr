@@ -1,5 +1,5 @@
 #include <memory.h>
-#include "../hash_map.h"
+#include "hash_map.h"
 
 result hash_map_init(hash_map *m, size_t value_size) {
     m->capacity = HASH_MAP_SIZE;

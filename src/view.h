@@ -1,7 +1,7 @@
 #ifndef VIEW_H
 #define VIEW_H
 
-#include "lib/raylib.h"
+#include "raylib.h"
 #include "filr.h"
 #include "result.h"
 #include "hash_map.h"

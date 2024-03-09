@@ -1,14 +1,19 @@
-#include "../filr.h"
+#include "filr.h"
 #include <string.h>
-#include <assert.h>
-
-#include <windows.h>
 
 #define assert_return(expr) if (!(expr)) return
 
-cstr CSTR_DASH = { .str = "\\", .size = 1 };
 cstr CSTR_TRASH_DIR = { .str = "filr_trash", .size = 10 };
-cstr CSTR_C_DISC = { .str = "C:", .size = 2 };
+
+#ifdef _WINDOWS_IMPL
+#include "filr_impl_windows.c"
+#else
+#include <unistd.h>
+#include <sys/types.h>
+#include <pwd.h>
+//#include <libc>
+#include "filr_impl_linux.c"
+#endif
 
 result filr_file_array_append(filr_array *array, filr_file* new_elem) {
     array->size++;
@@ -32,70 +37,6 @@ result filr_file_array_append(filr_array *array, filr_file* new_elem) {
     return RESULT_OK;
 }
 
-void filr_parse_date(filr_date *dst, const FILETIME src) {
-    SYSTEMTIME sys_time = {0};
-
-    if (!FileTimeToSystemTime(&src, &sys_time)) return;
-
-    dst->year = sys_time.wYear;
-    dst->month = sys_time.wMonth;
-    dst->day = sys_time.wDay;
-    dst->hour = sys_time.wHour;
-    dst->minute = sys_time.wMinute;
-}
-
-void filr_parse_file(filr_file *dst, WIN32_FIND_DATA src) { 
-    cstr_init_name(&(dst->name), src.cFileName);
-    cstr_init(&dst->extension, 0);
-
-    dst->is_directory = src.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
-    dst->is_dotfile = strcmp(dst->name.str, "..") != 0 && strcmp(dst->name.str, ".") != 0 && dst->name.str[0] == '.';
-
-    if (dst->is_directory) {
-        cstr_init_name(&dst->extension, "folder");
-    } else if (dst->is_dotfile) {
-        cstr_init_name(&dst->extension, "file");
-    } else {
-        cstr_strip_extension(&dst->extension, dst->name);
-    }
-
-    dst->size = src.nFileSizeHigh * (MAXDWORD + 1) + src.nFileSizeLow;
-    filr_parse_date(&(dst->last_edit_date), src.ftLastWriteTime);
-}
-
-
-result filr_load_directory(filr_context *context) {
-    WIN32_FIND_DATA file;
-    HANDLE hFind = NULL;
-    char *dir = context->directory.str;
-
-    char str_path[2048];
-    sprintf(str_path, "%s\\*.*", dir);
-
-    if ((hFind = FindFirstFile(str_path, &file)) == INVALID_HANDLE_VALUE) {
-        return RESULT_ERR("ERR: filr_load_directory invalid handle");
-    }
-
-    do {
-        filr_file next_file;
-
-        filr_parse_file(&next_file, file);
-
-        result err = filr_file_array_append(&context->files_all, &next_file);
-        if (err.err)
-            return err;
-    } while (FindNextFile(hFind, &file));
-
-    FindClose(hFind);
-
-    result err = filr_visible_update(context);
-    if (err.err)
-        return err;
-
-    return RESULT_OK;
-}
-
-
 result filr_init_context(filr_context *context) {
     filr_init_cmp_array(context->cmp_array);
 
@@ -105,7 +46,13 @@ result filr_init_context(filr_context *context) {
     context->view_config.sorting_function_ix = 0;
     context->view_config.hide_dotfiles = true;
 
+#ifdef _WINDOWS_IMPL
     char *HOME = getenv("HOMEPATH");
+#else
+    struct passwd *pw = getpwuid(getuid());
+    char *HOME = pw->pw_dir;
+#endif
+
     cstr_init_name(&(context->directory), HOME);
 
     filr_create_directory(context, CSTR_TRASH_DIR);
@@ -173,6 +120,8 @@ result filr_create_file(filr_context  *context, cstr file_name) {
     cstr file_path;
     cstr_init(&file_path, 0);
     cstr_concat(&file_path, 3, context->directory, CSTR_DASH, file_name);
+
+#ifdef _WINDOWS_IMPL
     HANDLE handle = CreateFile(file_path.str,
                           GENERIC_WRITE,
                           0,
@@ -185,6 +134,12 @@ result filr_create_file(filr_context  *context, cstr file_name) {
         return RESULT_ERR("ERR: filr_create_file error");
 
     CloseHandle(handle);
+#else
+    /*int err = open(file_path.str, O_RDWR | O_CREAT, S_IRUSR | S_IRGRP | S_IROTH);
+    if (err == -1)
+        return RESULT_ERR("ERR: filr_create_file error");*/
+#endif
+
     return RESULT_OK;
 }
 
@@ -203,10 +158,18 @@ result filr_rename_file(filr_context  *context, cstr new_file_name) {
     cstr_init(&new_file_path, 0);
     cstr_concat(&new_file_path, 3, context->directory, CSTR_DASH, new_file_name);
 
+#ifdef _WINDOWS_IMPL
     bool err = MoveFile(old_file_path.str,
                         new_file_path.str);
 
-    return (err) ? RESULT_OK : RESULT_ERR("ERR: filr_rename_file failed renaming");
+    if (!err)
+        return RESULT_ERR("ERR: filr_rename_file failed renaming");
+#else
+    /*int err = rename(old_file_path.str, new_file_path.str);
+    if (err == -1)
+        return RESULT_ERR("ERR: filr_rename_file failed renaming");*/
+#endif
+    return RESULT_OK;
 }
 
 result filr_delete_file(filr_context *context) {
@@ -226,17 +189,15 @@ result filr_delete_file(filr_context *context) {
 
     cstr trash_file_path;
     cstr_concat(&trash_file_path, 5, home, CSTR_DASH, CSTR_TRASH_DIR, CSTR_DASH, file);
-
+    
+#ifdef _WINDOWS_IMPL
     bool err = MoveFile(file_path.str,
                         trash_file_path.str);
+    if (!err)
+        return RESULT_ERR("ERR: filr_delete_file failed delete");
+#endif
 
-    return (err) ? RESULT_OK : RESULT_ERR("ERR: filr_delete_file failed delete");
-}
-
-bool directory_exists(cstr dir) {
-    DWORD dwAttrib = GetFileAttributes(dir.str);
-
-    return (dwAttrib != INVALID_FILE_ATTRIBUTES && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+    return RESULT_OK;
 }
 
 result filr_create_directory(filr_context *context, cstr file_name) {
@@ -246,13 +207,21 @@ result filr_create_directory(filr_context *context, cstr file_name) {
     if (directory_exists(new_directory))
         return RESULT_OK;
 
+#ifdef _WINDOWS_IMPL
     bool err = CreateDirectory(new_directory.str, NULL);
-    return (err) ? RESULT_OK : RESULT_ERR("ERR: filr_create_directory failed ");
+    if (!err)
+        return RESULT_ERR("ERR: filr_create_directory failed ");
+#endif
+    return RESULT_OK;
 }
 
 cstr filr_setup_command(filr_context *context, const char *command_format) {
     cstr full_path;
+#ifdef _WINDOWS_IMPL
     cstr_concat(&full_path, 2, CSTR_C_DISC, context->directory);
+#else
+    cstr_init(&full_path, 0);
+#endif
 
     cstr command;
     cstr_init(&command, 0);
@@ -298,25 +267,6 @@ void filr_move_index_filename(filr_context  *context, cstr filename) {
         }
     }
     context->visible_index = 0;
-}
-
-
-result filr_action(filr_context *context) {
-    size_t ix = context->files_visible.files[context->visible_index].all_files_index;
-    filr_file file = context->files_all.files[ix];
-
-    if (file.is_directory) {
-        return filr_goto_directory(context);
-    }
-
-    INT_PTR err = (INT_PTR) ShellExecute(NULL,
-                 NULL,
-                 file.name.str,
-                 NULL,
-                 context->directory.str,
-                 0);
-
-    return (err > 32) ? RESULT_OK : RESULT_ERR("ERR: filr_action failed call shell execute");
 }
 
 result filr_goto_directory(filr_context* context) {
