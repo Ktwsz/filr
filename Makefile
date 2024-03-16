@@ -1,5 +1,5 @@
 CXX = gcc
-CFLAGS = -Wall
+CFLAGS = -Wall -Wextra
 
 .PHONY: clean raylib
 

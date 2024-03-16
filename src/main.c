@@ -20,6 +20,9 @@ int main(void) {
     err_load2 = filr_init_context(&context_array[1]);
     assert(!err_load2.err);
 
+    for (size_t i = 0; i < context_array[0].files_all.size; ++i)
+        printf("%s\n", context_array[0].files_all.files[i].name.str);
+
 
     SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_RESIZABLE);
 

@@ -11,7 +11,6 @@ cstr CSTR_TRASH_DIR = { .str = "filr_trash", .size = 10 };
 #include <unistd.h>
 #include <sys/types.h>
 #include <pwd.h>
-//#include <libc>
 #include "filr_impl_linux.c"
 #endif
 

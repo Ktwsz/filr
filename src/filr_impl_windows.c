@@ -59,6 +59,7 @@ result filr_load_directory(filr_context *context) {
     } while (FindNextFile(hFind, &file));
 
     FindClose(hFind);
+//TODO: add defer
 
     result err = filr_visible_update(context);
     if (err.err)
