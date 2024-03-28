@@ -136,9 +136,30 @@ result filr_action(filr_context *context) {
         return filr_goto_directory(context);
     }
 
+    cstr abs_path;
+    cstr_init(&abs_path, 0);
+    cstr_concat(&abs_path, 3, context->directory, CSTR_DASH, file.name);
+
+    cstr cmd_prefix;
+    cstr_init_name(&cmd_prefix, "xdg-open ");
+
+    cstr cmd;
+    cstr_init(&cmd, 0);
+    cstr_concat(&cmd, 2, cmd_prefix, abs_path);
+    printf("%s\n", cmd.str);
+
+    //TODO: execute in another thread
+    system(cmd.str);
+
     return RESULT_OK;
 }
 
 bool directory_exists(cstr dir) {
-    return true;
+    DIR *dir_p = opendir(dir.str);
+
+    if (dir_p) {
+        closedir(dir_p);
+        return true;
+    }
+    return false;
 }

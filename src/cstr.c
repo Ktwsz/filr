@@ -202,6 +202,7 @@ void add_zero(char *s, int val) {
 }
 
 void cstr_parse_date(cstr *dst, us day, us month, us year, us hour, us minute) {
+    //TODO: broken on linux
     time_t t = time(NULL);
     struct tm tm = *gmtime(&t);
     int current_year = tm.tm_year + 1900;
