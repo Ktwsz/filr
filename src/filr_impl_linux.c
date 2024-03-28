@@ -7,17 +7,20 @@
 
 cstr CSTR_DASH = { .str = "/", .size = 1 };
 
-void filr_parse_date(filr_date *dst) {
-    //TODO
-    struct timespec ts;    
-    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts);
-    struct tm *my_tm = localtime(&ts.tv_sec);
+void filr_parse_date(filr_date *dst, struct stat *file_stat) {
+    char year[5], month[5], day[5], hour[5], minute[5];
 
-    dst->year = my_tm->tm_year;
-    dst->month = my_tm->tm_mon;
-    dst->day = my_tm->tm_mday;
-    dst->hour = my_tm->tm_hour;
-    dst->minute = my_tm->tm_min;
+    strftime(year, 5, "%Y", gmtime(&(file_stat->st_ctime)));
+    strftime(month, 5, "%m", gmtime(&(file_stat->st_ctime)));
+    strftime(day, 5, "%d", gmtime(&(file_stat->st_ctime)));
+    strftime(hour, 5, "%H", gmtime(&(file_stat->st_ctime)));
+    strftime(minute, 5, "%M", gmtime(&(file_stat->st_ctime)));
+
+    dst->year = atoi(year);
+    dst->month = atoi(month);
+    dst->day = atoi(day);
+    dst->hour = atoi(hour);
+    dst->minute = atoi(minute);
 }
 
 result filr_parse_file(filr_file *dst, struct dirent *entry, cstr current_dir) { 
@@ -50,7 +53,7 @@ result filr_parse_file(filr_file *dst, struct dirent *entry, cstr current_dir) {
         cstr_strip_extension(&dst->extension, dst->name);
     }
 
-    filr_parse_date(&dst->last_edit_date);
+    filr_parse_date(&dst->last_edit_date, &file_stat);
     return RESULT_OK;
 }
 
@@ -78,6 +81,12 @@ result filr_load_directory(filr_context *context) {
             return_result = err;
             goto defer;
         }
+    }
+
+    result err = filr_visible_update(context);
+    if (err.err) {
+        return_result = err;
+        goto defer;
     }
 
 defer:
