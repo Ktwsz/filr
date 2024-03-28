@@ -23,10 +23,19 @@ void filr_parse_date(filr_date *dst, struct stat *file_stat) {
     dst->minute = atoi(minute);
 }
 
-result filr_parse_file(filr_file *dst, struct dirent *entry, cstr current_dir) { 
-    if (strcmp(entry->d_name, "..") == 0 || strcmp(entry->d_name, ".") == 0)
-        return RESULT_OK;
+void filr_init_dir(filr_file *dst, char *name) {
+    cstr_init_name(&dst->name, name);
+    cstr_init_name(&dst->extension, "folder");
 
+    dst->is_dotfile = false;
+
+    dst->is_directory = true;
+
+    dst->last_edit_date = (filr_date){0};
+    dst->size = 0;
+}
+
+result filr_parse_file(filr_file *dst, struct dirent *entry, cstr current_dir) { 
     cstr_init(&dst->extension, 0);
     cstr_init_name(&dst->name, entry->d_name);
 
@@ -57,6 +66,10 @@ result filr_parse_file(filr_file *dst, struct dirent *entry, cstr current_dir) {
     return RESULT_OK;
 }
 
+bool is_dot_dir(struct dirent *entry) {
+    return (strcmp(entry->d_name, "..") == 0 || strcmp(entry->d_name, ".") == 0);
+}
+
 result filr_load_directory(filr_context *context) {
     char *dir_name = context->directory.str;
     DIR *dir = opendir(dir_name);
@@ -65,9 +78,30 @@ result filr_load_directory(filr_context *context) {
     }
 
     result return_result = RESULT_OK;
+    result err;
+
+    filr_file dot, dot2;
+    filr_init_dir(&dot, ".");
+    filr_init_dir(&dot2, "..");
+
+    err = filr_file_array_append(&context->files_all, &dot);
+    if (err.err) {
+        return_result = err;
+        goto defer;
+    }
+
+    err = filr_file_array_append(&context->files_all, &dot2);
+    if (err.err) {
+        return_result = err;
+        goto defer;
+    }
+
 
     struct dirent *entry;
     while ((entry = readdir(dir)) != NULL) {
+        if (is_dot_dir(entry))
+            continue;
+
         filr_file next_file;
 
         result file_err = filr_parse_file(&next_file, entry, context->directory);
@@ -76,14 +110,14 @@ result filr_load_directory(filr_context *context) {
             goto defer;
         }
 
-        result err = filr_file_array_append(&context->files_all, &next_file);
+        err = filr_file_array_append(&context->files_all, &next_file);
         if (err.err) {
             return_result = err;
             goto defer;
         }
     }
 
-    result err = filr_visible_update(context);
+    err = filr_visible_update(context);
     if (err.err) {
         return_result = err;
         goto defer;
@@ -95,6 +129,13 @@ defer:
 }
 
 result filr_action(filr_context *context) {
+    size_t ix = context->files_visible.files[context->visible_index].all_files_index;
+    filr_file file = context->files_all.files[ix];
+
+    if (file.is_directory) {
+        return filr_goto_directory(context);
+    }
+
     return RESULT_OK;
 }
 

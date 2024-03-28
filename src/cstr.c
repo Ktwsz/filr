@@ -141,8 +141,8 @@ void cstr_remove_suffix(cstr *dst, cstr src, const char c) {
     memcpy(dst->str, src.str, end_ix);
 }
 
-void cstr_strip_directory(cstr *dst, cstr src) {
-    cstr_remove_suffix(dst, src, '\\');
+void cstr_strip_directory(cstr *dst, cstr src, char sep) {
+    cstr_remove_suffix(dst, src, sep);
 }
 
 void cstr_cap(cstr *dst, cstr src, int len) {
@@ -203,7 +203,7 @@ void add_zero(char *s, int val) {
 
 void cstr_parse_date(cstr *dst, us day, us month, us year, us hour, us minute) {
     time_t t = time(NULL);
-    struct tm tm = *localtime(&t);
+    struct tm tm = *gmtime(&t);
     int current_year = tm.tm_year + 1900;
     int current_month = tm.tm_mon;
     int current_day = tm.tm_mday;

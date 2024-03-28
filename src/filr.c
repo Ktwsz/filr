@@ -279,10 +279,10 @@ result filr_goto_directory(filr_context* context) {
 
     if (strcmp(goto_directory.str, "..") == 0) {
         backwards = true;
-        cstr_strip_suffix(&current_directory, context->directory, '\\');
+        cstr_strip_suffix(&current_directory, context->directory, CSTR_DASH.str[0]);
 
         cstr tmp;
-        cstr_strip_directory(&tmp, context->directory);
+        cstr_strip_directory(&tmp, context->directory, CSTR_DASH.str[0]);
         
         cstr_copy(&(context->directory), tmp);
     } else if (strcmp(goto_directory.str, ".") != 0) {
