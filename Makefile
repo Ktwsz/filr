@@ -4,10 +4,15 @@ CFLAGS = -Wall -Wextra
 .PHONY: clean raylib
 
 
-windows: filr-win view-win input-win
-filr-win: src/filr.c src/filr.h src/filr_impl_linux.c src/result.h cstr
+windows: filr-win view input
+	$(CXX) src/main.c lib/libfilr.a lib/libinputs.a lib/libview.a lib/libraylib.a lib/libcstr.a lib/libhash_map.a -o build/filr_explorer -lm -lgdi32 -lwinmm $(CFLAGS)
 
-linux: filr-lin view-lin input
+filr-win: src/filr.c src/filr.h src/filr_impl_windows.c src/result.h cstr
+	$(CXX) -c src/filr.c src/filr.h $(CFLAGS) -D_WINDOWS_IMPL
+	ar rcs lib/libfilr.a filr.o
+	rm filr.o src/filr.h.gch
+
+linux: filr-lin view input
 	$(CXX) src/main.c lib/libfilr.a lib/libinputs.a lib/libview.a lib/libraylib.a lib/libcstr.a lib/libhash_map.a -o build/filr_explorer -lm $(CFLAGS)
 
 filr-lin: src/filr.c src/filr.h src/result.h cstr
@@ -15,7 +20,7 @@ filr-lin: src/filr.c src/filr.h src/result.h cstr
 	ar rcs lib/libfilr.a filr.o
 	rm filr.o src/filr.h.gch
 
-view-lin: src/view.c src/view.h src/result.h filr-lin raylib hash_map cstr
+view: src/view.c src/view.h src/result.h raylib hash_map cstr
 	$(CXX) -c src/view.c src/view.h $(CFLAGS)
 	ar rcs lib/libview.a view.o
 	rm view.o src/view.h.gch

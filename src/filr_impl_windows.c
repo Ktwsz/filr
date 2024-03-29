@@ -41,6 +41,8 @@ void filr_parse_file(filr_file *dst, WIN32_FIND_DATA src) {
 }
 
 result filr_load_directory(filr_context *context) {
+    result return_result = RESULT_OK;
+
     WIN32_FIND_DATA file;
     HANDLE hFind = NULL;
     char *dir = context->directory.str;
@@ -58,18 +60,22 @@ result filr_load_directory(filr_context *context) {
         filr_parse_file(&next_file, file);
 
         result err = filr_file_array_append(&context->files_all, &next_file);
-        if (err.err)
-            return err;
+        if (err.err) {
+            return_result = err;
+            goto defer;
+        }
     } while (FindNextFile(hFind, &file));
 
-    FindClose(hFind);
-//TODO: add defer
-
     result err = filr_visible_update(context);
-    if (err.err)
-        return err;
+    if (err.err) {
+        return_result = err;
+        goto defer;
+    }
 
-    return RESULT_OK;
+defer:
+    FindClose(hFind);
+
+    return return_result;
 }
 
 result filr_action(filr_context *context) {
