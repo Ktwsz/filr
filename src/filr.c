@@ -10,7 +10,9 @@ cstr CSTR_TRASH_DIR = { .str = "filr_trash", .size = 10 };
 #else
 #include <unistd.h>
 #include <sys/types.h>
+#include <fcntl.h>
 #include <pwd.h>
+#include <errno.h>
 #include "filr_impl_linux.c"
 #endif
 
@@ -45,12 +47,7 @@ result filr_init_context(filr_context *context) {
     context->view_config.sorting_function_ix = 0;
     context->view_config.hide_dotfiles = true;
 
-#ifdef _WINDOWS_IMPL
-    char *HOME = getenv("HOMEPATH");
-#else
-    struct passwd *pw = getpwuid(getuid());
-    char *HOME = pw->pw_dir;
-#endif
+    char *HOME = get_home_path();
 
     cstr_init_name(&(context->directory), HOME);
 
@@ -134,9 +131,11 @@ result filr_create_file(filr_context  *context, cstr file_name) {
 
     CloseHandle(handle);
 #else
-    /*int err = open(file_path.str, O_RDWR | O_CREAT, S_IRUSR | S_IRGRP | S_IROTH);
+    int err = open(file_path.str, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     if (err == -1)
-        return RESULT_ERR("ERR: filr_create_file error");*/
+        return RESULT_ERR("ERR: filr_create_file error");
+
+    close(err);
 #endif
 
     return RESULT_OK;
@@ -164,9 +163,9 @@ result filr_rename_file(filr_context  *context, cstr new_file_name) {
     if (!err)
         return RESULT_ERR("ERR: filr_rename_file failed renaming");
 #else
-    /*int err = rename(old_file_path.str, new_file_path.str);
+    int err = rename(old_file_path.str, new_file_path.str);
     if (err == -1)
-        return RESULT_ERR("ERR: filr_rename_file failed renaming");*/
+        return RESULT_ERR("ERR: filr_rename_file failed renaming");
 #endif
     return RESULT_OK;
 }
@@ -182,7 +181,8 @@ result filr_delete_file(filr_context *context) {
     cstr_init(&file_path, 0);
     cstr_concat(&file_path, 3, context->directory, CSTR_DASH, file);
 
-    char *HOME = getenv("HOMEPATH");
+    char *HOME = get_home_path();
+
     cstr home;
     cstr_init_name(&home, HOME);
 
@@ -193,6 +193,11 @@ result filr_delete_file(filr_context *context) {
     bool err = MoveFile(file_path.str,
                         trash_file_path.str);
     if (!err)
+        return RESULT_ERR("ERR: filr_delete_file failed delete");
+#else
+
+    int err = rename(file_path.str, trash_file_path.str);
+    if (err == -1)
         return RESULT_ERR("ERR: filr_delete_file failed delete");
 #endif
 
@@ -210,6 +215,10 @@ result filr_create_directory(filr_context *context, cstr file_name) {
     bool err = CreateDirectory(new_directory.str, NULL);
     if (!err)
         return RESULT_ERR("ERR: filr_create_directory failed ");
+#else
+    int err = mkdir(new_directory.str, 0777);
+    if (err == -1)
+        return RESULT_ERR("ERR: filr_create_directory failed");
 #endif
     return RESULT_OK;
 }
@@ -219,6 +228,7 @@ cstr filr_setup_command(filr_context *context, const char *command_format) {
 #ifdef _WINDOWS_IMPL
     cstr_concat(&full_path, 2, CSTR_C_DISC, context->directory);
 #else
+    //TODO: 
     cstr_init(&full_path, 0);
 #endif
 

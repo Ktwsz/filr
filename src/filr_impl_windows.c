@@ -4,6 +4,10 @@
 cstr CSTR_DASH = { .str = "\\", .size = 1 };
 cstr CSTR_C_DISC = { .str = "C:", .size = 2 };
 
+char *get_home_path() {
+    return getenv("HOMEPATH");
+}
+
 void filr_parse_date(filr_date *dst, const FILETIME src) {
     SYSTEMTIME sys_time = {0};
 

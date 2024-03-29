@@ -7,6 +7,11 @@
 
 cstr CSTR_DASH = { .str = "/", .size = 1 };
 
+char *get_home_path() {
+    struct passwd *pw = getpwuid(getuid());
+    return pw->pw_dir;
+}
+
 void filr_parse_date(filr_date *dst, struct stat *file_stat) {
     char year[5], month[5], day[5], hour[5], minute[5];
 
