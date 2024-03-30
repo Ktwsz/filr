@@ -101,3 +101,19 @@ bool directory_exists(cstr dir) {
 
     return (dwAttrib != INVALID_FILE_ATTRIBUTES && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
 }
+
+
+result filr_open_nvim(filr_context *context) {
+    cstr command = filr_setup_command(context, "start pwsh.exe -noexit -command \" cd %s && nvim .\"");
+
+    system(command.str);
+    return RESULT_OK;
+}
+
+
+result filr_open_windows_explorer(filr_context *context) {
+    cstr command = filr_setup_command(context, "start %s");
+    system(command.str);
+
+    return RESULT_OK;
+}

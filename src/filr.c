@@ -8,11 +8,8 @@ cstr CSTR_TRASH_DIR = { .str = "filr_trash", .size = 10 };
 #ifdef _WINDOWS_IMPL
 #include "filr_impl_windows.c"
 #else
-#include <unistd.h>
 #include <sys/types.h>
 #include <fcntl.h>
-#include <pwd.h>
-#include <errno.h>
 #include "filr_impl_linux.c"
 #endif
 
@@ -228,8 +225,7 @@ cstr filr_setup_command(filr_context *context, const char *command_format) {
 #ifdef _WINDOWS_IMPL
     cstr_concat(&full_path, 2, CSTR_C_DISC, context->directory);
 #else
-    //TODO: 
-    cstr_init(&full_path, 0);
+    cstr_init_name(&full_path, context->directory.str);
 #endif
 
     cstr command;
@@ -241,20 +237,6 @@ cstr filr_setup_command(filr_context *context, const char *command_format) {
     return command;
 }
 
-result filr_open_nvim(filr_context *context) {
-    cstr command = filr_setup_command(context, "start pwsh.exe -noexit -command \" cd %s && nvim .\"");
-    cstr_print(command);
-    system(command.str);
-
-    return RESULT_OK;
-}
-
-result filr_open_windows_explorer(filr_context *context) {
-    cstr command = filr_setup_command(context, "start %s");
-    system(command.str);
-
-    return RESULT_OK;
-}
 
 void filr_move_index(filr_context *context, int di) {
     int new_index = (int)context->visible_index + di;
@@ -294,7 +276,10 @@ result filr_goto_directory(filr_context* context) {
         cstr tmp;
         cstr_strip_directory(&tmp, context->directory, CSTR_DASH.str[0]);
         
-        cstr_copy(&(context->directory), tmp);
+        if (tmp.size > 0)
+            cstr_copy(&(context->directory), tmp);
+        else
+            cstr_init_name(&context->directory, "/");
     } else if (strcmp(goto_directory.str, ".") != 0) {
         cstr tmp;
         cstr_concat(&tmp, 3, context->directory, CSTR_DASH, goto_directory);

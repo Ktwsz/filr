@@ -4,6 +4,8 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <time.h>
+#include <unistd.h>
+#include <pwd.h>
 
 cstr CSTR_DASH = { .str = "/", .size = 1 };
 
@@ -151,10 +153,15 @@ result filr_action(filr_context *context) {
     cstr cmd;
     cstr_init(&cmd, 0);
     cstr_concat(&cmd, 2, cmd_prefix, abs_path);
-    printf("%s\n", cmd.str);
 
-    //TODO: execute in another thread
-    system(cmd.str);
+    pid_t id = fork();
+    if (id == -1)
+        return RESULT_ERR("filr_action: couldnt create new proccess");
+
+    if (id == 0) {
+        system(cmd.str);
+        exit(0);
+    }
 
     return RESULT_OK;
 }
@@ -167,4 +174,36 @@ bool directory_exists(cstr dir) {
         return true;
     }
     return false;
+}
+
+
+result filr_open_nvim(filr_context *context) {
+    cstr command = filr_setup_command(context, "cd %s && nvim .");
+
+    pid_t id = fork();
+    if (id == -1)
+        return RESULT_ERR("filr_open_nvim: couldnt create new proccess");
+
+    if (id == 0) {
+        system(command.str);
+        exit(0);
+    }
+
+    return RESULT_OK;
+}
+
+
+result filr_open_windows_explorer(filr_context *context) {
+    cstr command = filr_setup_command(context, "xdg-open %s");
+
+    pid_t id = fork();
+    if (id == -1)
+        return RESULT_ERR("filr_open_windows_explorer: couldnt create new proccess");
+
+    if (id == 0) {
+        system(command.str);
+        exit(0);
+    }
+
+    return RESULT_OK;
 }

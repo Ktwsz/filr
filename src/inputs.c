@@ -1,7 +1,6 @@
 #include "inputs.h"
 
 #include <math.h>
-#include <stdlib.h>
 #include "../config/inputs.h"
 
 

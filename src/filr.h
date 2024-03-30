@@ -90,6 +90,8 @@ cstr *filr_get_name_all(filr_context *context, size_t ix);
 
 void filr_create_dummy_file(filr_file *dst);
 
+cstr filr_setup_command(filr_context *context, const char *command_format);
+
 int filr_file_comparator_basic(const void *p1, const void *p2);
 
 int filr_file_comparator_size(const void *p1, const void *p2);
