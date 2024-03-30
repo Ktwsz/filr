@@ -43,6 +43,20 @@
     #define key_rename_confirm KEY_ENTER
 // Rename
 
+// Copy and Move bindings
+    #define key_select_file KEY_A
+    #define key_select_all KEY_A
+    #define key_select_clear KEY_A
+
+    #define key_move_start KEY_X
+    #define key_move_confirm KEY_ENTER
+    #define key_move_cancel KEY_C
+
+    #define key_copy_start KEY_C
+    #define key_copy_confirm KEY_ENTER
+    #define key_copy_cancel KEY_C
+// Copy and Move
+
 // Input mode bindings
     #define key_input_mode_cancel KEY_C
     #define key_input_mode_delete_last KEY_BACKSPACE

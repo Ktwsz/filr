@@ -9,7 +9,9 @@ typedef enum {
     INPUTS_NORMAL,
     INPUTS_CREATE_FILE,
     INPUTS_CREATE_DIRECTORY,
-    INPUTS_RENAME
+    INPUTS_RENAME,
+    INPUTS_COPY,
+    INPUTS_MOVE
 } mode_enum;
 
 typedef struct {
