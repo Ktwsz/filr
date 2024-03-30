@@ -202,11 +202,14 @@ void add_zero(char *s, int val) {
 }
 
 void cstr_parse_date(cstr *dst, us day, us month, us year, us hour, us minute) {
-    //TODO: broken on linux
     time_t t = time(NULL);
-    struct tm tm = *gmtime(&t);
+    struct tm tm = *localtime(&t);
     int current_year = tm.tm_year + 1900;
+#ifdef _WINDOWS_IMPL
     int current_month = tm.tm_mon;
+#else
+    int current_month = tm.tm_mon + 1;
+#endif
     int current_day = tm.tm_mday;
 
     cstr_init(dst, 10);

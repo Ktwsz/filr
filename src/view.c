@@ -1,6 +1,7 @@
 #include "view.h"
 
 #include <math.h>
+#include <string.h>
 
 #include "../config/theme_blue.h"
 //#include "../resources/theme_pink.h"
@@ -180,23 +181,24 @@ void write_row_data(cstr *dst, filr_file file, int name_cap, bool hide_file_data
     cstr file_capped, file_size, date;
     cstr_cap(&file_capped, file.name, name_cap);
 
-    if (hide_file_data) {
+    if (hide_file_data || strcmp(file.name.str, ".") == 0 || strcmp(file.name.str, "..") == 0) {
         cstr_copy(dst, file_capped);
-    } else {
-        cstr_parse_file_size(&file_size, file.size);
-        cstr_parse_date(&date, file.last_edit_date.day,
-                        file.last_edit_date.month,
-                        file.last_edit_date.year,
-                        file.last_edit_date.hour,
-                        file.last_edit_date.minute);
-
-        cstr_concat(dst,
-                    5,
-                    file_capped, CSTR_SPACE,
-                    file_size, CSTR_SPACE,
-                    date);
-
+        return;
     }
+
+    cstr_parse_file_size(&file_size, file.size);
+    cstr_parse_date(&date, file.last_edit_date.day,
+            file.last_edit_date.month,
+            file.last_edit_date.year,
+            file.last_edit_date.hour,
+            file.last_edit_date.minute);
+
+    cstr_concat(dst,
+            5,
+            file_capped, CSTR_SPACE,
+            file_size, CSTR_SPACE,
+            date);
+
 }
 
 

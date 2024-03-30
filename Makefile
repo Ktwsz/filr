@@ -1,21 +1,24 @@
 CXX = gcc
-CFLAGS = -Wall -Wextra
+
+PLATFORM=linux
 
 .PHONY: clean raylib
 
+ifeq ($(PLATFORM), linux)
+CFLAGS = -Wall -Wextra
+all: linux
+else
+CFLAGS = -Wall -Wextra -D_WINDOWS_IMPL
+all: windows
+endif
 
-windows: filr-win view input
+windows: filr view input
 	$(CXX) src/main.c lib/libfilr.a lib/libinputs.a lib/libview.a lib/libraylib.a lib/libcstr.a lib/libhash_map.a -o build/filr_explorer -lm -lgdi32 -lwinmm $(CFLAGS)
 
-filr-win: src/filr.c src/filr.h src/filr_impl_windows.c src/result.h cstr
-	$(CXX) -c src/filr.c src/filr.h $(CFLAGS) -D_WINDOWS_IMPL
-	ar rcs lib/libfilr.a filr.o
-	rm filr.o src/filr.h.gch
-
-linux: filr-lin view input
+linux: filr view input
 	$(CXX) src/main.c lib/libfilr.a lib/libinputs.a lib/libview.a lib/libraylib.a lib/libcstr.a lib/libhash_map.a -o build/filr_explorer -lm $(CFLAGS)
 
-filr-lin: src/filr.c src/filr.h src/result.h cstr
+filr: src/filr.c src/filr.h src/result.h cstr
 	$(CXX) -c src/filr.c src/filr.h $(CFLAGS)
 	ar rcs lib/libfilr.a filr.o
 	rm filr.o src/filr.h.gch
