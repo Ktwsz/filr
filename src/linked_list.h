@@ -8,14 +8,12 @@ typedef struct list_t {
     struct list_t *tail;
 } list_t;
 
-result list_init(list_t *list);
+list_t list_init();
+
+result list_new(list_t *list, int val);
 
 result list_query(list_t *list, int val);
 
 void list_clear(list_t *list);
-
-int list_next(list_t *list);
-
-bool list_end(list_t *list);
 
 #endif

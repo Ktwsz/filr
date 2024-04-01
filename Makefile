@@ -2,11 +2,11 @@ CXX = gcc
 
 PLATFORM=linux
 
-.PHONY: clean raylib
+.PHONY: all clean raylib
 
 ifeq ($(PLATFORM), linux)
 CFLAGS = -Wall -Wextra
-all: linux
+all: linux test
 else
 CFLAGS = -Wall -Wextra -D_WINDOWS_IMPL
 all: windows
@@ -17,6 +17,10 @@ windows: filr view input
 
 linux: filr view input
 	$(CXX) src/main.c lib/libfilr.a lib/libinputs.a lib/libview.a lib/libraylib.a lib/libcstr.a lib/libhash_map.a lib/liblinked_list.a -o build/filr_explorer -lm $(CFLAGS)
+
+
+test: linux
+	cd test && make all
 
 filr: src/filr.c src/filr.h src/result.h cstr
 	$(CXX) -c src/filr.c src/filr.h $(CFLAGS)
@@ -55,3 +59,4 @@ linked_list: src/linked_list.c src/linked_list.h
 
 clean:
 	rm -rf lib/*.a
+	cd test && make clean
