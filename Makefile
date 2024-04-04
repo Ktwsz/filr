@@ -13,10 +13,10 @@ all: windows
 endif
 
 windows: filr view input
-	$(CXX) src/main.c lib/libfilr.a lib/libinputs.a lib/libview.a lib/libraylib.a lib/libcstr.a lib/libhash_map.a lib/liblinked_list.a -o build/filr_explorer -lm -lgdi32 -lwinmm $(CFLAGS)
+	$(CXX) src/main.c -Llib -lfilr -linputs -lview -lraylib -lcstr -lhash_map -llinked_list -o build/filr_explorer -lm -lgdi32 -lwinmm $(CFLAGS)
 
 linux: filr view input
-	$(CXX) src/main.c lib/libfilr.a lib/libinputs.a lib/libview.a lib/libraylib.a lib/libcstr.a lib/libhash_map.a lib/liblinked_list.a -o build/filr_explorer -lm $(CFLAGS)
+	$(CXX) src/main.c -Llib -lfilr -linputs -lview -lraylib -lcstr -lhash_map -llinked_list -o build/filr_explorer -lm $(CFLAGS)
 
 
 test: linux
