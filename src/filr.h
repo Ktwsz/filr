@@ -7,6 +7,7 @@
 #include <stdbool.h>
 #include "cstr.h"
 #include "result.h"
+#include "linked_list.h"
 
 #define INIT_ARRAY_CAPACITY 128
 
@@ -45,6 +46,7 @@ typedef struct {
     size_t visible_index;
     size_t no_dotfiles_size;
     filr_comparator cmp_array[6];
+    list_t selected_files;
 } filr_context;
 
 
@@ -91,6 +93,10 @@ cstr *filr_get_name_all(filr_context *context, size_t ix);
 void filr_create_dummy_file(filr_file *dst);
 
 cstr filr_setup_command(filr_context *context, const char *command_format);
+
+result filr_toggle_select_file(filr_context *context);
+
+bool filr_select_contains(filr_context *context, int ix);
 
 int filr_file_comparator_basic(const void *p1, const void *p2);
 

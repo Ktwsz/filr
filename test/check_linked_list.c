@@ -91,6 +91,31 @@ START_TEST(test_ll_query_clear)
 }
 END_TEST
 
+START_TEST(test_ll_contains)
+{
+    result err;
+
+    list_t list = list_init();
+
+    err = list_query(&list, 1);
+    ck_assert(!err.err);
+    
+    err = list_query(&list, 2);
+    ck_assert(!err.err);
+    
+    err = list_query(&list, 3);
+    ck_assert(!err.err);
+
+    ck_assert(true == list_contains(&list, 1));
+    ck_assert(true == list_contains(&list, 2));
+    ck_assert(true == list_contains(&list, 3));
+
+    ck_assert(false == list_contains(&list, 4));
+    ck_assert(false == list_contains(&list, 5));
+    ck_assert(false == list_contains(&list, 6));
+}
+END_TEST
+
 Suite *ll_suite(void) {
     Suite *s = suite_create("Linked list");
 
@@ -103,10 +128,14 @@ Suite *ll_suite(void) {
     TCase *tc_query = tcase_create("query");
     tcase_add_test(tc_query, test_ll_query_add);
     tcase_add_test(tc_query, test_ll_query_clear);
+
+    TCase *tc_contains = tcase_create("contains");
+    tcase_add_test(tc_contains, test_ll_contains);
         
     suite_add_tcase(s, tc_init);
     suite_add_tcase(s, tc_new);
     suite_add_tcase(s, tc_query);
+    suite_add_tcase(s, tc_contains);
 
     return s;
 }

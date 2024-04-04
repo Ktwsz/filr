@@ -250,14 +250,27 @@ void view_directory(filr_context *context, view_window *window, view_theme *them
             position.y += window->text_size.y + WINDOW_PADDING_V, ++ix) {
 
 
-        bool is_selected = context->visible_index == ix;
+        bool is_pointing = context->visible_index == ix;
+        bool is_selected = filr_select_contains(context, ix);
 
         Rectangle row_rect = { .x = window->offset.x,
                                .y = window->offset.y + position.y - window->camera.y,
                                .width = window->text_size.x - SCROLL_BAR_WIDTH,
                                .height = window->text_size.y };
 
-        if (is_focused && is_selected) DrawRectangleRec(row_rect, theme->passive);
+        if (is_selected) {
+            row_rect.x += row_rect.height;
+            //todo: selection clips through when to tabs rae opened
+            DrawRectangleRec((Rectangle) {
+                    .x = row_rect.x - row_rect.height,
+                    .y = row_rect.y,
+                    .width = row_rect.height,
+                    .height = row_rect.height
+                    }, theme->passive);
+        }
+
+        if (is_focused && is_pointing) DrawRectangleRec(row_rect, theme->passive);
+
 
         Vector2 draw_icon_pos = {row_rect.x, row_rect.y};
         

@@ -49,6 +49,8 @@ result filr_init_context(filr_context *context) {
     cstr_init_name(&(context->directory), HOME);
 
     filr_create_directory(context, CSTR_TRASH_DIR);
+
+    context->selected_files = list_init();
     
     result load_err = filr_load_directory(context);
     if (load_err.err)
@@ -319,6 +321,20 @@ void filr_create_dummy_file(filr_file *dst) {
     dst->last_edit_date.year = 2137;
     dst->last_edit_date.hour = 4;
     dst->last_edit_date.minute = 20;
+}
+
+result filr_toggle_select_file(filr_context *context) {
+    size_t ix = context->visible_index;
+    if (ix <= 1)
+        return RESULT_ERR("WARN: filr_toggle_select_file file index less than 2");
+
+    list_query(&context->selected_files, ix);
+
+    return RESULT_OK;
+}
+
+bool filr_select_contains(filr_context *context, int ix) {
+    return list_contains(&context->selected_files, ix);
 }
 
 int filr_file_comparator_basic(const void *p1, const void *p2) {

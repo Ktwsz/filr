@@ -48,3 +48,16 @@ void list_clear(list_t *list) {
     list_clear(list->tail);
     free(list);
 }
+
+bool list_contains(list_t *list, int val) {
+    list_t *it = list; 
+
+    while (it != NULL) {
+        if (it->head == val)
+            return true;
+
+        it = it->tail;
+    }
+
+    return false;
+}

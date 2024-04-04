@@ -16,4 +16,6 @@ result list_query(list_t *list, int val);
 
 void list_clear(list_t *list);
 
+bool list_contains(list_t *list, int val);
+
 #endif

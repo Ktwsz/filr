@@ -331,7 +331,10 @@ void toggle_file_data(ARGS) {
 }
 
 void select_file(ARGS) {
-    //TODO
+    result err = filr_toggle_select_file(&CONTEXT_FOCUS);
+
+    if (err.err)
+        logger_setup_err(context, view, input, err);
 }
 
 void select_all(ARGS) {
