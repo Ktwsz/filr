@@ -260,7 +260,7 @@ void view_directory(filr_context *context, view_window *window, view_theme *them
 
         if (is_selected) {
             row_rect.x += row_rect.height;
-            //todo: selection clips through when to tabs rae opened
+            row_rect.width -= row_rect.height;
             DrawRectangleRec((Rectangle) {
                     .x = row_rect.x - row_rect.height,
                     .y = row_rect.y,
