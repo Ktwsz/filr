@@ -17,12 +17,15 @@
 #define HANDLE_INPUT_MOUSE_SCROLL(...) mouse_scroll(__VA_ARGS__)
 #define HANDLE_INPUT_DOWN(input, ...) if (IsKeyDown(key_##input)) input(__VA_ARGS__)
 
-cstr LOGGER_NORMAL_MODE_PREFIX = { .str = "NORMAL |", .size = 8 };
-cstr LOGGER_CREATE_FILE_MODE_PREFIX = { .str = "FILE   |", .size = 8 };
-cstr LOGGER_CREATE_DIR_MODE_PREFIX = { .str = "DIR    |", .size = 8 };
-cstr LOGGER_RENAME_MODE_PREFIX = { .str = "RENAME |", .size = 8 };
-cstr LOGGER_MOVE_MODE_PREFIX = { .str = "MOVE   |", .size = 8 };
-cstr LOGGER_COPY_MODE_PREFIX = { .str = "COPY   |", .size = 8 };
+cstr mode_bar[] = {
+    { .str = "NORMAL |", .size = 8 },
+    { .str = "FILE   |", .size = 8 },
+    { .str = "DIR    |", .size = 8 },
+    { .str = "RENAME |", .size = 8 },
+    { .str = "MOVE   |", .size = 8 },
+    { .str = "COPY   |", .size = 8 },
+};
+
 
 void logger_mode_changed(view_t *view, inputs_t *input);
 
@@ -50,26 +53,8 @@ void logger_setup_err(ARGS, result err) {
 
 void logger_mode_changed(view_t *view, inputs_t *input) {
     view_logger_clear_err(view);
-    switch (input->mode) {
-        case INPUTS_NORMAL:
-            view_window_set_str(&view->logger, LOGGER_NORMAL_MODE_PREFIX);
-            break;
-        case INPUTS_CREATE_FILE:
-            view_window_set_str(&view->logger, LOGGER_CREATE_FILE_MODE_PREFIX);
-            break;
-        case INPUTS_CREATE_DIRECTORY:
-            view_window_set_str(&view->logger, LOGGER_CREATE_DIR_MODE_PREFIX);
-            break;
-        case INPUTS_RENAME:
-            view_window_set_str(&view->logger, LOGGER_RENAME_MODE_PREFIX);
-            break;
-        case INPUTS_COPY:
-            view_window_set_str(&view->logger, LOGGER_COPY_MODE_PREFIX);
-            break;
-        case INPUTS_MOVE:
-            view_window_set_str(&view->logger, LOGGER_MOVE_MODE_PREFIX);
-            break;
-    }
+    
+    view_window_set_str(&view->logger, mode_bar[input->mode]);
 }
 
 void center_camera(ARGS) {

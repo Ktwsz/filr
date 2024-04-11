@@ -78,6 +78,8 @@ bool is_dot_dir(struct dirent *entry) {
 }
 
 result filr_load_directory(filr_context *context) {
+    filr_select_clear(context);
+
     char *dir_name = context->directory.str;
     DIR *dir = opendir(dir_name);
     if (dir == NULL) {

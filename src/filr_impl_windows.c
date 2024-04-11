@@ -41,6 +41,7 @@ void filr_parse_file(filr_file *dst, WIN32_FIND_DATA src) {
 }
 
 result filr_load_directory(filr_context *context) {
+    filr_select_clear(context);
     result return_result = RESULT_OK;
 
     WIN32_FIND_DATA file;

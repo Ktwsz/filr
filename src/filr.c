@@ -1,7 +1,6 @@
 #include "filr.h"
 #include <string.h>
 
-#define assert_return(expr) if (!(expr)) return
 
 cstr CSTR_TRASH_DIR = { .str = "filr_trash", .size = 10 };
 
@@ -72,6 +71,11 @@ void filr_init_cmp_array(filr_comparator  *array) {
 void filr_free_context(filr_context *context) {
     free(context->files_all.files);
     free(context->files_visible.files);
+}
+
+void filr_select_clear(filr_context *context) {
+    list_clear(context->selected_files.tail);
+    context->selected_files.tail = NULL;
 }
 
 result filr_visible_update(filr_context *context) {
@@ -312,6 +316,10 @@ cstr *filr_get_name_all(filr_context *context, size_t ix) {
     return &context->files_all.files[ix].name;
 }
 
+int filr_get_index_all(filr_context *context, int visible_ix) {
+    return context->files_visible.files[visible_ix].all_files_index;
+}
+
 void filr_create_dummy_file(filr_file *dst) {
     cstr_init_name(&dst->name, "siala baba mak");
     dst->is_directory = false;
@@ -324,7 +332,7 @@ void filr_create_dummy_file(filr_file *dst) {
 }
 
 result filr_toggle_select_file(filr_context *context) {
-    size_t ix = context->visible_index;
+    int ix = filr_get_index_all(context, context->visible_index);
     if (ix <= 1)
         return RESULT_ERR("WARN: filr_toggle_select_file file index less than 2");
 
@@ -334,7 +342,7 @@ result filr_toggle_select_file(filr_context *context) {
 }
 
 bool filr_select_contains(filr_context *context, int ix) {
-    return list_contains(&context->selected_files, ix);
+    return list_contains(&context->selected_files, filr_get_index_all(context, ix));
 }
 
 int filr_file_comparator_basic(const void *p1, const void *p2) {

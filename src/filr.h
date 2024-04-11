@@ -56,6 +56,8 @@ result filr_load_directory(filr_context *context);
 
 result filr_init_context(filr_context *context);
 
+void filr_select_clear(filr_context *context);
+
 void filr_init_cmp_array(filr_comparator *array);
 
 void filr_free_context(filr_context *context);
