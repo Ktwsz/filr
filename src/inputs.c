@@ -316,18 +316,21 @@ void toggle_file_data(ARGS) {
 }
 
 void select_file(ARGS) {
-    result err = filr_toggle_select_file(&CONTEXT_FOCUS);
+    filr_select_clear(&context[1 - input->window_focus]);
+
+    result err = filr_select_toggle_file(&CONTEXT_FOCUS);
 
     if (err.err)
         logger_setup_err(context, view, input, err);
 }
 
 void select_all(ARGS) {
-    //TODO
+    filr_select_toggle_all(&CONTEXT_FOCUS);
 }
 
 void select_clear(ARGS) {
-    //TODO
+    filr_select_clear(&context[0]);
+    filr_select_clear(&context[1]);
 }
 
 void move_start(ARGS) {

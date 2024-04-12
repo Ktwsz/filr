@@ -52,11 +52,11 @@ typedef struct {
 
 result filr_file_array_append(filr_array *array, filr_file *new_elem);
 
+int filr_get_index_all(filr_context *context, int visible_ix);
+
 result filr_load_directory(filr_context *context);
 
 result filr_init_context(filr_context *context);
-
-void filr_select_clear(filr_context *context);
 
 void filr_init_cmp_array(filr_comparator *array);
 
@@ -96,9 +96,13 @@ void filr_create_dummy_file(filr_file *dst);
 
 cstr filr_setup_command(filr_context *context, const char *command_format);
 
-result filr_toggle_select_file(filr_context *context);
+result filr_select_toggle_file(filr_context *context);
 
 bool filr_select_contains(filr_context *context, int ix);
+
+void filr_select_clear(filr_context *context);
+
+result filr_select_toggle_all(filr_context *context);
 
 int filr_file_comparator_basic(const void *p1, const void *p2);
 

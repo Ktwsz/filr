@@ -78,6 +78,19 @@ void filr_select_clear(filr_context *context) {
     context->selected_files.tail = NULL;
 }
 
+result filr_select_toggle_all(filr_context *context) {
+    for (size_t it = 2; it < context->files_visible.size; ++it) {
+        int ix = filr_get_index_all(context, it);
+
+        result err = list_query(&context->selected_files, ix);
+        if (err.err)
+            return err;
+    }
+
+    return RESULT_OK;
+
+}
+
 result filr_visible_update(filr_context *context) {
     context->files_visible.size = 0;
     for (size_t i = 0; i < context->files_all.size; ++i) {
@@ -331,14 +344,14 @@ void filr_create_dummy_file(filr_file *dst) {
     dst->last_edit_date.minute = 20;
 }
 
-result filr_toggle_select_file(filr_context *context) {
+result filr_select_toggle_file(filr_context *context) {
     int ix = filr_get_index_all(context, context->visible_index);
     if (ix <= 1)
         return RESULT_ERR("WARN: filr_toggle_select_file file index less than 2");
 
-    list_query(&context->selected_files, ix);
+    result err = list_query(&context->selected_files, ix);
 
-    return RESULT_OK;
+    return err;
 }
 
 bool filr_select_contains(filr_context *context, int ix) {
