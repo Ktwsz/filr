@@ -24,6 +24,7 @@ typedef struct {
     cstr input_str;
     bool second_window_open;
     int window_focus;
+    int file_buffer;
 } inputs_t;
 
 

@@ -104,6 +104,14 @@ void filr_select_clear(filr_context *context);
 
 result filr_select_toggle_all(filr_context *context);
 
+void filr_select_buffer_save(filr_context *context);
+
+result filr_select_buffer_copy(filr_context *context, cstr dst);
+
+result filr_select_buffer_move(filr_context *context, cstr dst);
+
+void filr_select_buffer_clear(filr_context *context);
+
 int filr_file_comparator_basic(const void *p1, const void *p2);
 
 int filr_file_comparator_size(const void *p1, const void *p2);

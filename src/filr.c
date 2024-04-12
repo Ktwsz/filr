@@ -91,6 +91,15 @@ result filr_select_toggle_all(filr_context *context) {
 
 }
 
+//TODO
+void filr_select_buffer_save(filr_context *context) {}
+
+result filr_select_buffer_copy(filr_context *context, cstr dst) {}
+
+result filr_select_buffer_move(filr_context *context, cstr dst) {}
+
+void filr_select_buffer_clear(filr_context *context) {}
+
 result filr_visible_update(filr_context *context) {
     context->files_visible.size = 0;
     for (size_t i = 0; i < context->files_all.size; ++i) {

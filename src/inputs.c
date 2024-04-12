@@ -43,12 +43,12 @@ void inputs_init(inputs_t *input, view_t *view) {
 }
 
 
-void input_mode_cancel(ARGS);
+void mode_cancel(ARGS);
 
 void logger_setup_err(ARGS, result err) {
     view_logger_set_err(view, err);
     if (input->mode == INPUTS_RENAME || input->mode == INPUTS_CREATE_FILE || input->mode == INPUTS_CREATE_DIRECTORY)
-        input_mode_cancel(&CONTEXT_FOCUS, view, input);
+        mode_cancel(&CONTEXT_FOCUS, view, input);
 }
 
 void logger_mode_changed(view_t *view, inputs_t *input) {
@@ -171,7 +171,7 @@ void create_directory_start(ARGS) {
     input_mode_start(context, view, input, INPUTS_CREATE_DIRECTORY);
 }
 
-void input_mode_cancel(ARGS) {
+void mode_cancel(ARGS) {
     input->mode = INPUTS_NORMAL;
     view_hide_input(view);
     cstr_init(&input->input_str, 0);
@@ -196,7 +196,7 @@ void create_file_confirm(ARGS) {
     filr_move_index_filename(&CONTEXT_FOCUS, input->input_str);
     view_center_camera(&CONTEXT_FOCUS, view, input->window_focus);
 
-    input_mode_cancel(context, view, input);
+    mode_cancel(context, view, input);
 }
 
 void create_directory_confirm(ARGS) {
@@ -217,7 +217,7 @@ void create_directory_confirm(ARGS) {
     filr_move_index_filename(&CONTEXT_FOCUS, input->input_str);
     view_center_camera(&CONTEXT_FOCUS, view, input->window_focus);
 
-    input_mode_cancel(context, view, input);
+    mode_cancel(context, view, input);
 }
 
 void input_mode_delete_last(view_t *view, inputs_t *input) {
@@ -276,7 +276,7 @@ void rename_confirm(ARGS) {
     filr_move_index_filename(&CONTEXT_FOCUS, input->input_str);
     view_center_camera(&CONTEXT_FOCUS, view, input->window_focus);
 
-    input_mode_cancel(context, view, input);
+    mode_cancel(context, view, input);
 }
 
 void open_windows_explorer(ARGS) {
@@ -334,32 +334,63 @@ void select_clear(ARGS) {
 }
 
 void move_start(ARGS) {
-    //TODO
+    input_mode_start(context, view, input, INPUTS_MOVE);
+    filr_select_buffer_save(&CONTEXT_FOCUS);
+
+    input->file_buffer = input->window_focus;
 }
 
 void copy_start(ARGS) {
-    //TODO
+    input_mode_start(context, view, input, INPUTS_COPY);
+    filr_select_buffer_save(&CONTEXT_FOCUS);
+
+    input->file_buffer = input->window_focus;
 }
 
 void copy_confirm(ARGS) {
-    //TODO
-}
+    result err = filr_select_buffer_copy(&context[input->file_buffer], CONTEXT_FOCUS.directory);
+    if (err.err)
+        logger_setup_err(context, view, input, err);
 
-void copy_cancel(ARGS) {
-    //TODO
+    filr_select_clear(&context[input->file_buffer]);
+    filr_select_buffer_clear(&context[input->file_buffer]);
 }
 
 void move_confirm(ARGS) {
-    //TODO
-}
+    result err = filr_select_buffer_move(&context[input->file_buffer], CONTEXT_FOCUS.directory);
+    if (err.err)
+        logger_setup_err(context, view, input, err);
 
-void move_cancel(ARGS) {
-    //TODO
+    filr_select_clear(&context[input->file_buffer]);
+    filr_select_buffer_clear(&context[input->file_buffer]);
 }
 
 void handle_key_presses(ARGS) {
     switch (input->mode) {
         case INPUTS_NORMAL:
+            HANDLE_INPUT(create_file_start, PASS_ARGS);
+
+            HANDLE_INPUT(delete_file, PASS_ARGS);
+
+            HANDLE_INPUT(rename_start, PASS_ARGS);
+
+            HANDLE_INPUT(open_windows_explorer, PASS_ARGS);
+
+            HANDLE_INPUT(open_nvim, PASS_ARGS);
+
+            HANDLE_INPUT_SHIFT(create_directory_start, PASS_ARGS);
+
+            HANDLE_INPUT(select_file, PASS_ARGS);
+
+            HANDLE_INPUT_SHIFT(select_all, PASS_ARGS);
+
+            HANDLE_INPUT_CTRL(select_clear, PASS_ARGS);
+
+            HANDLE_INPUT(move_start, PASS_ARGS);
+
+            HANDLE_INPUT(copy_start, PASS_ARGS);
+
+movement_binds:
             HANDLE_INPUT(center_camera, PASS_ARGS);
 
             HANDLE_INPUT(move_one_down, PASS_ARGS);
@@ -372,16 +403,6 @@ void handle_key_presses(ARGS) {
 
             HANDLE_INPUT(view_dotfiles, PASS_ARGS);
 
-            HANDLE_INPUT(create_file_start, PASS_ARGS);
-
-            HANDLE_INPUT(delete_file, PASS_ARGS);
-
-            HANDLE_INPUT(rename_start, PASS_ARGS);
-
-            HANDLE_INPUT(open_windows_explorer, PASS_ARGS);
-
-            HANDLE_INPUT(open_nvim, PASS_ARGS);
-
             HANDLE_INPUT(toggle_second_window, PASS_ARGS);
 
             HANDLE_INPUT(change_window_focus_left, PASS_ARGS);
@@ -390,7 +411,6 @@ void handle_key_presses(ARGS) {
 
             HANDLE_INPUT(toggle_file_data, PASS_ARGS);
 
-            HANDLE_INPUT_SHIFT(create_directory_start, PASS_ARGS);
 
             HANDLE_INPUT_MOUSE(mouse_left_click, PASS_ARGS);
 
@@ -400,49 +420,45 @@ void handle_key_presses(ARGS) {
 
             HANDLE_INPUT_DOWN(key_scroll_up, PASS_ARGS);
 
-            HANDLE_INPUT(select_file, PASS_ARGS);
-
-            HANDLE_INPUT_SHIFT(select_all, PASS_ARGS);
-
-            HANDLE_INPUT_CTRL(select_clear, PASS_ARGS);
-
-            HANDLE_INPUT(move_start, PASS_ARGS);
-
-            HANDLE_INPUT(copy_start, PASS_ARGS);
-
             if (IsKeyUp(key_key_scroll_down) && IsKeyUp(key_key_scroll_up))
                 input->scroll_frames_count = 0;
             break;
 
         case INPUTS_CREATE_FILE:
             HANDLE_INPUT(create_file_confirm, PASS_ARGS);
-            HANDLE_INPUT_CTRL(input_mode_cancel, PASS_ARGS);
+            HANDLE_INPUT_CTRL(mode_cancel, PASS_ARGS);
             HANDLE_INPUT(input_mode_delete_last, view, input);
             input_mode_parse_key_queue(view, input);
             break;
 
         case INPUTS_CREATE_DIRECTORY:
             HANDLE_INPUT(create_directory_confirm, PASS_ARGS);
-            HANDLE_INPUT_CTRL(input_mode_cancel, PASS_ARGS);
+            HANDLE_INPUT_CTRL(mode_cancel, PASS_ARGS);
             HANDLE_INPUT(input_mode_delete_last, view, input);
             input_mode_parse_key_queue(view, input);
             break;
 
         case INPUTS_RENAME:
             HANDLE_INPUT(rename_confirm, PASS_ARGS);
-            HANDLE_INPUT_CTRL(input_mode_cancel, PASS_ARGS);
+            HANDLE_INPUT_CTRL(mode_cancel, PASS_ARGS);
             HANDLE_INPUT(input_mode_delete_last, view, input);
             input_mode_parse_key_queue(view, input);
             break;
 
         case INPUTS_COPY: 
             HANDLE_INPUT(copy_confirm, PASS_ARGS);
-            HANDLE_INPUT(copy_cancel, PASS_ARGS);
+            HANDLE_INPUT_CTRL(mode_cancel, PASS_ARGS);
+
+            goto movement_binds;
+
             break;
 
         case INPUTS_MOVE: 
             HANDLE_INPUT(move_confirm, PASS_ARGS);
-            HANDLE_INPUT(move_cancel, PASS_ARGS);
+            HANDLE_INPUT_CTRL(mode_cancel, PASS_ARGS);
+
+            goto movement_binds;
+
             break;
 
     }
