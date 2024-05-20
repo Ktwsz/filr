@@ -209,3 +209,17 @@ result filr_open_windows_explorer(filr_context *context) {
 
     return RESULT_OK;
 }
+
+//TODO
+result filr_copy_file(cstr old_file_path, cstr new_file_path) {
+    return RESULT_OK;
+}
+
+result filr_move_file(cstr old_file_path, cstr new_file_path) {
+    int err = rename(old_file_path.str, new_file_path.str);
+
+    if (err == -1)
+        return RESULT_ERR("ERR: filr_move_file failed renaming");
+
+    return RESULT_OK;
+}

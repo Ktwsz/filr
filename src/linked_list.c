@@ -41,6 +41,18 @@ result list_query(list_t *list, int val) {
     return RESULT_OK;
 }
 
+size_t list_size(list_t *list) {
+    size_t size = 0;
+
+    while (list->tail != NULL) {
+        size++;
+
+        list = list->tail;
+    }
+
+    return size;
+}
+
 void list_clear(list_t *list) {
     if (list == NULL)
         return;

@@ -48,11 +48,11 @@
     #define key_select_all KEY_A
     #define key_select_clear KEY_A
 
-    #define key_move_start KEY_C
-    #define key_move_confirm KEY_ENTER
+    #define key_move_start KEY_X
+    #define key_move_confirm KEY_X
 
-    #define key_copy_start KEY_X
-    #define key_copy_confirm KEY_ENTER
+    #define key_copy_start KEY_C
+    #define key_copy_confirm KEY_C
 // Copy and Move
 
 // Input mode bindings

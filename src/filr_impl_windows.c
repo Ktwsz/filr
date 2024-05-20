@@ -79,13 +79,16 @@ defer:
     return return_result;
 }
 
-result filr_action(filr_context *context) {
+result filr_action(filr_context *context, bool only_dirs) {
     size_t ix = context->files_visible.files[context->visible_index].all_files_index;
     filr_file file = context->files_all.files[ix];
 
     if (file.is_directory) {
         return filr_goto_directory(context);
     }
+
+    if (only_dirs)
+        return RESULT_OK;
 
     INT_PTR err = (INT_PTR) ShellExecute(NULL,
                  NULL,
@@ -115,6 +118,19 @@ result filr_open_nvim(filr_context *context) {
 result filr_open_windows_explorer(filr_context *context) {
     cstr command = filr_setup_command(context, "start %s");
     system(command.str);
+
+    return RESULT_OK;
+}
+//TODO
+result filr_copy_file(cstr old_file_path, cstr new_file_path) {
+    return RESULT_OK;
+}
+
+result filr_move_file(cstr old_file_path, cstr new_file_path) {
+    bool err = MoveFile(old_file_path.str,
+                        new_file_path.str);
+    if (!err)
+        return RESULT_ERR("ERR: filr_move_file failed renaming");
 
     return RESULT_OK;
 }

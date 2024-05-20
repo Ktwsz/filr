@@ -22,8 +22,8 @@ cstr mode_bar[] = {
     { .str = "FILE   |", .size = 8 },
     { .str = "DIR    |", .size = 8 },
     { .str = "RENAME |", .size = 8 },
-    { .str = "MOVE   |", .size = 8 },
     { .str = "COPY   |", .size = 8 },
+    { .str = "MOVE   |", .size = 8 },
 };
 
 
@@ -43,12 +43,12 @@ void inputs_init(inputs_t *input, view_t *view) {
 }
 
 
-void mode_cancel(ARGS);
+void mode_cancel(ARGS, bool with_input);
 
 void logger_setup_err(ARGS, result err) {
+    mode_cancel(&CONTEXT_FOCUS, view, input, (input->mode == INPUTS_RENAME || input->mode == INPUTS_CREATE_FILE || input->mode == INPUTS_CREATE_DIRECTORY));
+
     view_logger_set_err(view, err);
-    if (input->mode == INPUTS_RENAME || input->mode == INPUTS_CREATE_FILE || input->mode == INPUTS_CREATE_DIRECTORY)
-        mode_cancel(&CONTEXT_FOCUS, view, input);
 }
 
 void logger_mode_changed(view_t *view, inputs_t *input) {
@@ -171,10 +171,12 @@ void create_directory_start(ARGS) {
     input_mode_start(context, view, input, INPUTS_CREATE_DIRECTORY);
 }
 
-void mode_cancel(ARGS) {
+void mode_cancel(ARGS, bool with_input) {
     input->mode = INPUTS_NORMAL;
-    view_hide_input(view);
-    cstr_init(&input->input_str, 0);
+    if (with_input) {
+        view_hide_input(view);
+        cstr_init(&input->input_str, 0);
+    }
     logger_mode_changed(view, input);
 }
 
@@ -196,7 +198,7 @@ void create_file_confirm(ARGS) {
     filr_move_index_filename(&CONTEXT_FOCUS, input->input_str);
     view_center_camera(&CONTEXT_FOCUS, view, input->window_focus);
 
-    mode_cancel(context, view, input);
+    mode_cancel(context, view, input, true);
 }
 
 void create_directory_confirm(ARGS) {
@@ -217,7 +219,7 @@ void create_directory_confirm(ARGS) {
     filr_move_index_filename(&CONTEXT_FOCUS, input->input_str);
     view_center_camera(&CONTEXT_FOCUS, view, input->window_focus);
 
-    mode_cancel(context, view, input);
+    mode_cancel(context, view, input, true);
 }
 
 void input_mode_delete_last(view_t *view, inputs_t *input) {
@@ -276,7 +278,7 @@ void rename_confirm(ARGS) {
     filr_move_index_filename(&CONTEXT_FOCUS, input->input_str);
     view_center_camera(&CONTEXT_FOCUS, view, input->window_focus);
 
-    mode_cancel(context, view, input);
+    mode_cancel(context, view, input, true);
 }
 
 void open_windows_explorer(ARGS) {
@@ -335,34 +337,50 @@ void select_clear(ARGS) {
 
 void move_start(ARGS) {
     input_mode_start(context, view, input, INPUTS_MOVE);
-    filr_select_buffer_save(&CONTEXT_FOCUS);
+    result err = filr_select_buffer_save(&CONTEXT_FOCUS);
+    if (err.err) {
+        logger_setup_err(context, view, input, err);
+        return;
+    }
 
     input->file_buffer = input->window_focus;
 }
 
 void copy_start(ARGS) {
     input_mode_start(context, view, input, INPUTS_COPY);
-    filr_select_buffer_save(&CONTEXT_FOCUS);
+    result err = filr_select_buffer_save(&CONTEXT_FOCUS);
+    if (err.err) {
+        logger_setup_err(context, view, input, err);
+        return;
+    }
 
     input->file_buffer = input->window_focus;
 }
 
 void copy_confirm(ARGS) {
     result err = filr_select_buffer_copy(&context[input->file_buffer], CONTEXT_FOCUS.directory);
-    if (err.err)
+    if (err.err) {
         logger_setup_err(context, view, input, err);
+        return;
+    }
 
     filr_select_clear(&context[input->file_buffer]);
     filr_select_buffer_clear(&context[input->file_buffer]);
+
+    mode_cancel(context, view, input, false);
 }
 
 void move_confirm(ARGS) {
     result err = filr_select_buffer_move(&context[input->file_buffer], CONTEXT_FOCUS.directory);
-    if (err.err)
+    if (err.err) {
         logger_setup_err(context, view, input, err);
+        return;
+    }
 
     filr_select_clear(&context[input->file_buffer]);
     filr_select_buffer_clear(&context[input->file_buffer]);
+
+    mode_cancel(context, view, input, false);
 }
 
 void handle_key_presses(ARGS) {
@@ -426,28 +444,28 @@ movement_binds:
 
         case INPUTS_CREATE_FILE:
             HANDLE_INPUT(create_file_confirm, PASS_ARGS);
-            HANDLE_INPUT_CTRL(mode_cancel, PASS_ARGS);
+            HANDLE_INPUT_CTRL(mode_cancel, PASS_ARGS, true);
             HANDLE_INPUT(input_mode_delete_last, view, input);
             input_mode_parse_key_queue(view, input);
             break;
 
         case INPUTS_CREATE_DIRECTORY:
             HANDLE_INPUT(create_directory_confirm, PASS_ARGS);
-            HANDLE_INPUT_CTRL(mode_cancel, PASS_ARGS);
+            HANDLE_INPUT_CTRL(mode_cancel, PASS_ARGS, true);
             HANDLE_INPUT(input_mode_delete_last, view, input);
             input_mode_parse_key_queue(view, input);
             break;
 
         case INPUTS_RENAME:
             HANDLE_INPUT(rename_confirm, PASS_ARGS);
-            HANDLE_INPUT_CTRL(mode_cancel, PASS_ARGS);
+            HANDLE_INPUT_CTRL(mode_cancel, PASS_ARGS, true);
             HANDLE_INPUT(input_mode_delete_last, view, input);
             input_mode_parse_key_queue(view, input);
             break;
 
         case INPUTS_COPY: 
             HANDLE_INPUT(copy_confirm, PASS_ARGS);
-            HANDLE_INPUT_CTRL(mode_cancel, PASS_ARGS);
+            HANDLE_INPUT_CTRL(mode_cancel, PASS_ARGS, false);
 
             goto movement_binds;
 
@@ -455,7 +473,7 @@ movement_binds:
 
         case INPUTS_MOVE: 
             HANDLE_INPUT(move_confirm, PASS_ARGS);
-            HANDLE_INPUT_CTRL(mode_cancel, PASS_ARGS);
+            HANDLE_INPUT_CTRL(mode_cancel, PASS_ARGS, false);
 
             goto movement_binds;
 

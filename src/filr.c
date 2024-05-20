@@ -40,6 +40,8 @@ result filr_init_context(filr_context *context) {
     context->files_all.capacity = INIT_ARRAY_CAPACITY;
     context->files_visible.capacity = INIT_ARRAY_CAPACITY;
 
+    context->selected_buffer.capacity = INIT_ARRAY_CAPACITY;
+
     context->view_config.sorting_function_ix = 0;
     context->view_config.hide_dotfiles = true;
 
@@ -71,6 +73,10 @@ void filr_init_cmp_array(filr_comparator  *array) {
 void filr_free_context(filr_context *context) {
     free(context->files_all.files);
     free(context->files_visible.files);
+    
+    filr_select_buffer_clear(context);
+
+    list_clear(context->selected_files.tail);
 }
 
 void filr_select_clear(filr_context *context) {
@@ -91,14 +97,73 @@ result filr_select_toggle_all(filr_context *context) {
 
 }
 
-//TODO
-void filr_select_buffer_save(filr_context *context) {}
+result filr_select_buffer_save(filr_context *context) {
+    result ret = RESULT_OK;
 
-result filr_select_buffer_copy(filr_context *context, cstr dst) {}
+    context->selected_buffer.capacity = list_size(&context->selected_files) + 1;
+    if (context->selected_buffer.capacity == 1)
+        return RESULT_ERR("move/copy buffer is empty");
 
-result filr_select_buffer_move(filr_context *context, cstr dst) {}
+    filr_file directory_file = {0};
+    cstr_init_name(&directory_file.name, context->directory.str);
+    ret = filr_file_array_append(&context->selected_buffer, &directory_file);
+    if (ret.err)
+        return ret;
 
-void filr_select_buffer_clear(filr_context *context) {}
+    list_t *it = context->selected_files.tail;
+
+    while (it != NULL) {
+        ret = filr_file_array_append(&context->selected_buffer, &context->files_all.files[it->head]);
+        if (ret.err)
+            return ret;
+    
+        it = it->tail;
+    }
+
+    return ret;
+}
+
+result filr_select_buffer_copy(filr_context *context, cstr new_directory) {
+    cstr old_directory = context->selected_buffer.files[0].name;
+
+    for (size_t ix = 1; ix < context->selected_buffer.size; ++ix) {
+        cstr file_name = context->selected_buffer.files[ix].name;
+
+        cstr old_path, new_path;
+        cstr_concat(&old_path, 3, old_directory, CSTR_DASH, file_name);
+        cstr_concat(&new_path, 3, new_directory, CSTR_DASH, file_name);
+
+        result err = filr_copy_file(old_path, new_path);
+        if (err.err)
+            return err;
+    }
+
+    return RESULT_OK;
+}
+
+result filr_select_buffer_move(filr_context *context, cstr new_directory) {
+    cstr old_directory = context->selected_buffer.files[0].name;
+
+    for (size_t ix = 1; ix < context->selected_buffer.size; ++ix) {
+        cstr file_name = context->selected_buffer.files[ix].name;
+
+        cstr old_path, new_path;
+        cstr_concat(&old_path, 3, old_directory, CSTR_DASH, file_name);
+        cstr_concat(&new_path, 3, new_directory, CSTR_DASH, file_name);
+
+        result err = filr_move_file(old_path, new_path);
+        if (err.err)
+            return err;
+    }
+
+    return RESULT_OK;
+}
+
+void filr_select_buffer_clear(filr_context *context) {
+    free(context->selected_buffer.files);
+    context->selected_buffer.size = 0;
+    context->selected_buffer.files = NULL;
+}
 
 result filr_visible_update(filr_context *context) {
     context->files_visible.size = 0;
@@ -181,18 +246,9 @@ result filr_rename_file(filr_context  *context, cstr new_file_name) {
     cstr_init(&new_file_path, 0);
     cstr_concat(&new_file_path, 3, context->directory, CSTR_DASH, new_file_name);
 
-#ifdef _WINDOWS_IMPL
-    bool err = MoveFile(old_file_path.str,
-                        new_file_path.str);
+    result err = filr_move_file(old_file_path, new_file_path);
 
-    if (!err)
-        return RESULT_ERR("ERR: filr_rename_file failed renaming");
-#else
-    int err = rename(old_file_path.str, new_file_path.str);
-    if (err == -1)
-        return RESULT_ERR("ERR: filr_rename_file failed renaming");
-#endif
-    return RESULT_OK;
+    return err;
 }
 
 result filr_delete_file(filr_context *context) {
@@ -213,20 +269,10 @@ result filr_delete_file(filr_context *context) {
 
     cstr trash_file_path;
     cstr_concat(&trash_file_path, 5, home, CSTR_DASH, CSTR_TRASH_DIR, CSTR_DASH, file);
-    
-#ifdef _WINDOWS_IMPL
-    bool err = MoveFile(file_path.str,
-                        trash_file_path.str);
-    if (!err)
-        return RESULT_ERR("ERR: filr_delete_file failed delete");
-#else
 
-    int err = rename(file_path.str, trash_file_path.str);
-    if (err == -1)
-        return RESULT_ERR("ERR: filr_delete_file failed delete");
-#endif
+    result err = filr_move_file(file_path, trash_file_path);
 
-    return RESULT_OK;
+    return err;
 }
 
 result filr_create_directory(filr_context *context, cstr file_name) {

@@ -2,6 +2,7 @@
 #define LINKED_LIST_H
 
 #include "result.h"
+#include <stddef.h>
 
 typedef struct list_t {
     int head;
@@ -15,6 +16,8 @@ result list_new(list_t *list, int val);
 result list_query(list_t *list, int val);
 
 void list_clear(list_t *list);
+
+size_t list_size(list_t *list);
 
 bool list_contains(list_t *list, int val);
 
